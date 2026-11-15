@@ -75,12 +75,22 @@ void DISP_SetSegments(enum dispSeg seg);
 /** Ustawia stan wyjść COM1–COM4: aktywne są pozycje z maski pos, pozostałe wyłączone. */
 void DISP_SetPositions(enum dispPos pos);
 
-/** Ustawia segmenty cyfry 0–9 (inna wartość gasi segmenty). Pozycje wybiera DISP_SetPositions(). */
+/** Ustawia segmenty cyfry 0–9 (inna wartość gasi segmenty). Pozycje wybiera DISP_SetPositions().
+ *  Cyfra ma do 7 segmentów – zobacz UWAGA (prąd) poniżej. */
 void DISP_SetDigit(uint8_t digit);
 
+/** Maska segmentów cyfry 0–9 (inna wartość: DISP_SEG_NONE), bez zapalania czegokolwiek.
+ *  Przy multipleksowaniu cyfrę zapala się w częściach: DISP_DigitSegments(d) & DISP_GROUP_1 itd. */
+enum dispSeg DISP_DigitSegments(uint8_t digit);
+
+/** Grupy po najwyżej 3 segmenty: A–C, D–F, G i DP. */
+#define DISP_GROUP_1  (DISP_SEG_A | DISP_SEG_B | DISP_SEG_C)
+#define DISP_GROUP_2  (DISP_SEG_D | DISP_SEG_E | DISP_SEG_F)
+#define DISP_GROUP_3  (DISP_SEG_G | DISP_SEG_DP)
+
 /* UWAGA (prąd): wyjścia COM są połączone z pinami mikrokontrolera bez tranzystorów, jeden
- * segment pobiera ok. 6 mA. Bez multipleksowania zapalaj najwyżej 3 segmenty na jednej
- * pozycji i ten sam segment na najwyżej 3 pozycjach. */
+ * segment pobiera ok. 6 mA. W każdej chwili – także przy multipleksowaniu – zapalaj najwyżej
+ * 3 segmenty na jednej pozycji i ten sam segment na najwyżej 3 pozycjach. */
 
 #ifdef __cplusplus
 }

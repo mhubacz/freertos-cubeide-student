@@ -107,9 +107,14 @@ void DISP_SetPositions(enum dispPos pos)
   GPIOC->BSRR = set | (reset << 16);
 }
 
+enum dispSeg DISP_DigitSegments(uint8_t digit)
+{
+  return (enum dispSeg)((digit < 10U) ? k_digit[digit] : DISP_SEG_NONE);
+}
+
 void DISP_SetDigit(uint8_t digit)
 {
-  DISP_SetSegments((enum dispSeg)((digit < 10U) ? k_digit[digit] : DISP_SEG_NONE));
+  DISP_SetSegments(DISP_DigitSegments(digit));
 }
 
 /* ------------------------------------------------------------------ diody RGB */
@@ -128,10 +133,20 @@ static const uint8_t k_rgb_map[4][3] = {
   /* 3 */ { 9, 10, 11 },
 };
 
-void RGB_Off(void)
+/* Rejestr MODER portu B jest zmieniany operacją odczyt-modyfikacja-zapis. Sekcja krytyczna
+ * (krótka, bez wywołań systemu) chroni ją, gdy RGB_Set/RGB_Off wywołuje kilka zadań FreeRTOS. */
+static void rgb_off_unsafe(void)
 {
   GPIOB->MODER &= ~RGB_MODER;                 /* wszystkie linie jako wejścia (Hi-Z) */
   GPIOB->BSRR = (0x0FUL << RGB_LINE0) << 16;  /* ODR = 0 */
+}
+
+void RGB_Off(void)
+{
+  const uint32_t pm = __get_PRIMASK();
+  __disable_irq();
+  rgb_off_unsafe();
+  __set_PRIMASK(pm);
 }
 
 void RGB_Set(uint8_t led, enum rgbColor color)
@@ -150,9 +165,12 @@ void RGB_Set(uint8_t led, enum rgbColor color)
   }
   const uint32_t pa = RGB_LINE0 + a;
   const uint32_t pk = RGB_LINE0 + k;
-  RGB_Off();
+  const uint32_t pm = __get_PRIMASK();
+  __disable_irq();
+  rgb_off_unsafe();
   GPIOB->BSRR = (1UL << pa) | (1UL << (pk + 16U));            /* najpierw poziomy...   */
   GPIOB->MODER |= (1UL << (pa * 2U)) | (1UL << (pk * 2U));    /* ...potem dwa wyjścia  */
+  __set_PRIMASK(pm);
 }
 
 /* ------------------------------------------------------------------ 1-Wire, DS18B20 (PB4) */
