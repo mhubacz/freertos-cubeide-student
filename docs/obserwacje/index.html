@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Systemy operacyjne w automatyce — FreeRTOS w STM32CubeIDE (z obserwacją)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+    --paper:#F5F6F8; --surface:#FFFFFF; --ink:#1B2430; --muted:#5A6675;
+    --faint:#8A94A2; --line:#E3E7ED; --code-bg:#141B24; --code-ink:#E7ECF2;
+    --code-faint:#8FA0B2; --graphite:#3A4757;
+    --rtos:#2F6F5E;
+    --radius:14px; --radius-sm:8px;
+    --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --display:'Space Grotesk',var(--sans);
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--graphite);text-underline-offset:2px}
+  a:hover{text-decoration:underline}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(245,246,248,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar-inner{max-width:1180px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{font-family:var(--display);font-weight:700;letter-spacing:-.01em;font-size:17px}
+  .brand .sub{font-family:var(--sans);font-weight:500;font-size:13px;color:var(--muted);margin-left:10px}
+  .legend{margin-left:auto;display:flex;gap:14px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  .layout{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:236px 1fr;gap:40px;padding:0 24px}
+  .sidebar{position:sticky;top:72px;align-self:start;height:calc(100vh - 92px);overflow:auto;padding:28px 0}
+  .sidebar nav{display:flex;flex-direction:column;gap:2px}
+  .sidebar .navlabel{font-size:11.5px;font-weight:600;color:var(--faint);margin:16px 10px 6px}
+  .sidebar a{color:var(--muted);font-size:14px;padding:7px 12px;border-radius:var(--radius-sm);border-left:2px solid transparent;display:flex;align-items:center;gap:8px}
+  .sidebar a:hover{background:var(--surface);text-decoration:none;color:var(--ink)}
+  .sidebar a.active{color:var(--ink);border-left-color:var(--e,var(--graphite));background:var(--surface);font-weight:600}
+  .sidebar a .num{font-family:var(--mono);font-size:12px;color:var(--faint);min-width:26px}
+  .sidebar a .edot{width:8px;height:8px;border-radius:50%;background:var(--e,var(--graphite));flex-shrink:0}
+
+  main{padding:36px 0 120px;min-width:0}
+  section{scroll-margin-top:80px;margin-bottom:56px}
+
+  .hero{padding:18px 0 6px}
+  .hero .kicker{font-size:14px;color:var(--muted);margin:0 0 10px}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,46px);line-height:1.08;letter-spacing:-.02em;margin:0 0 16px}
+  .hero p.lead{font-size:17.5px;color:var(--muted);max-width:64ch;margin:0 0 22px}
+  .assign{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;max-width:760px}
+  .assign .a{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--e);border-radius:var(--radius-sm);padding:12px 14px}
+  .assign .a b{font-family:var(--display);font-size:15px;display:block}
+  .assign .a small{color:var(--muted);font-size:12.5px}
+  .assign .a .eng{color:var(--e);font-weight:600;font-size:12.5px}
+
+  h2.eyebrow{font-family:var(--display);font-weight:600;font-size:14px;color:var(--faint);margin:0 0 6px}
+  .sec-title{font-family:var(--display);font-weight:700;font-size:27px;letter-spacing:-.015em;margin:0 0 16px}
+  p{max-width:72ch}
+
+  .tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .tool{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .tool h3{font-family:var(--display);font-size:16.5px;margin:0 0 6px}
+  .tool p{font-size:14px;color:var(--muted);margin:0}
+  code{font-family:var(--mono);font-size:.86em;background:var(--paper);padding:1px 6px;border-radius:5px;color:var(--ink)}
+
+  .schemas{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .schema{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--e);border-radius:var(--radius);padding:18px 20px}
+  .schema .shead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .schema h3{font-family:var(--display);font-size:18px;margin:0}
+  .badge{font-family:var(--sans);font-size:12px;font-weight:600;color:#fff;background:var(--e);padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .badge.ghost{color:var(--e);background:color-mix(in srgb,var(--e) 12%,transparent)}
+  .tbl{margin:0 0 12px}
+  .tbl .tname{font-family:var(--mono);font-weight:600;font-size:13.5px;color:var(--ink)}
+  .tbl .cols{font-family:var(--mono);font-size:12.3px;color:var(--muted);line-height:1.7;margin-top:2px}
+  .tbl .pk{color:var(--e);font-weight:600}
+  .tbl .fk{color:var(--graphite);text-decoration:underline dotted}
+
+  figure{margin:0}
+  .er{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:6px}
+  .er img{width:100%;height:auto;display:block;border-radius:8px;background:#fff}
+  figcaption{font-size:13px;color:var(--muted);margin-top:10px}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14.5px}
+  th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line)}
+  thead th{font-family:var(--display);font-weight:600;font-size:14px;background:var(--paper)}
+  tbody tr:last-child td{border-bottom:0}
+  td:first-child,th:first-child{font-weight:500}
+  td code{background:transparent;padding:0}
+
+  .cheat{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .cheat .cbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:6px 4px}
+  .cheat h4{font-family:var(--display);font-size:14px;color:var(--faint);margin:12px 16px 8px}
+  .cheat .row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:7px 16px;border-top:1px solid var(--line);align-items:center}
+  .cheat .row:first-of-type{border-top:0}
+  .cheat .row code{font-size:12.6px;background:var(--paper)}
+  .cheat .row span{font-size:13px;color:var(--muted);text-align:right}
+
+  .lab{--e:var(--graphite);background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--e);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+  .lab{--e:var(--rtos)}
+  .lab-head{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer;user-select:none}
+  .lab-head:hover{background:color-mix(in srgb,var(--paper) 55%,transparent)}
+  .lab-no{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--e);background:color-mix(in srgb,var(--e) 12%,transparent);padding:4px 9px;border-radius:6px;white-space:nowrap}
+  .lab-title{font-family:var(--display);font-weight:600;font-size:18px;flex:1;letter-spacing:-.01em}
+  .lab-title small{display:block;font-family:var(--sans);font-weight:400;font-size:13px;color:var(--muted);margin-top:2px}
+  .lab-eng{font-size:12px;font-weight:600;color:#fff;background:var(--e);padding:4px 11px;border-radius:999px;white-space:nowrap}
+  .lab-prog{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;display:none}
+  @media(min-width:620px){.lab-prog{display:inline}}
+  .chev{width:20px;height:20px;flex-shrink:0;color:var(--faint);transition:transform .22s}
+  .lab.open .chev{transform:rotate(90deg)}
+  .lab-body{display:none;padding:0 22px 24px;border-top:1px solid var(--line)}
+  .lab.open .lab-body{display:block}
+  .lab-body h4{font-family:var(--display);font-size:14px;color:var(--faint);font-weight:600;margin:22px 0 10px}
+  .goal{font-size:15px;color:var(--muted);margin:16px 0 4px}
+
+  ol.tasks{list-style:none;margin:6px 0 0;padding:0;counter-reset:t}
+  ol.tasks li{position:relative;padding:9px 8px 9px 42px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px}
+  ol.tasks li:last-child{border-bottom:0}
+  ol.tasks li::before{counter-increment:t;content:counter(t);position:absolute;left:8px;top:9px;width:22px;height:22px;font-family:var(--mono);font-size:12px;color:var(--faint);background:var(--paper);border-radius:6px;display:flex;align-items:center;justify-content:center}
+  ol.tasks input[type=checkbox]{margin-top:4px;width:16px;height:16px;accent-color:var(--e);flex-shrink:0;cursor:pointer}
+  ol.tasks label{font-size:15px;cursor:pointer}
+  ol.tasks li.done label{color:var(--faint);text-decoration:line-through}
+  .taskmain{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+  .ans-toggle{align-self:flex-start;background:none;border:0;color:var(--e);font-family:var(--sans);font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 0;opacity:.85}
+  .ans-toggle:hover{opacity:1;text-decoration:underline}
+  li.has-ans .ans-toggle{opacity:1}
+  li.has-ans .ans-toggle::before{content:"● ";color:var(--e);font-size:10px}
+  textarea.ans{width:100%;min-height:66px;resize:vertical;font-family:var(--mono);font-size:12.6px;line-height:1.55;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:2px}
+  textarea.ans:focus{outline:2px solid color-mix(in srgb,var(--e) 45%,transparent);outline-offset:1px;border-color:var(--e)}
+
+  .cmd{position:relative;margin:12px 0}
+  .cmd pre{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:var(--radius-sm);padding:15px 96px 15px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65}
+  .cmd pre code{background:none;padding:0;border-radius:0;color:inherit;font-size:inherit}
+  .cmd pre .cm{color:var(--code-faint)}
+  .cmd .btns{position:absolute;top:9px;right:9px;display:flex;gap:6px}
+  .cmd .btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--code-faint);background:#20293494;border:1px solid #37424f;border-radius:6px;padding:4px 10px;cursor:pointer;transition:.15s}
+  .cmd .btn:hover{color:#fff;border-color:#4a5666}
+  .cmd .btn.done{color:#fff;background:var(--e,#2E7D5B);border-color:transparent}
+
+  .callout{background:var(--paper);border-left:3px solid var(--e);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:13px 16px;font-size:14px;color:var(--muted);margin:14px 0}
+  .callout b{color:var(--ink)}
+  .lab-body h3.czesc{font-family:var(--display);font-size:17px;font-weight:600;color:var(--ink);margin:34px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .lab-body .czesc-opis{color:var(--muted);font-size:14px;margin:6px 0 4px}
+  .lab-body ul.chetni li{margin:6px 0}
+  .diff-note{background:color-mix(in srgb,var(--e) 9%,transparent);border-radius:var(--radius-sm);padding:13px 16px;font-size:14px;margin:16px 0 4px}
+  .diff-note strong{color:var(--e)}
+  .conn{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px;color:var(--muted);margin-top:10px}
+  .conn span b{color:var(--ink);font-family:var(--mono);font-weight:500}
+
+  .pin-note{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;font-size:14.5px;color:var(--muted)}
+  .pin-note b{color:var(--ink)}
+
+  .report-form{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+  .report-form .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  @media(max-width:560px){.report-form .fields{grid-template-columns:1fr}}
+  .report-form .fl{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .report-form input[type=text]{width:100%;font-family:var(--sans);font-size:15px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+  .report-form input[type=text]:focus{outline:2px solid color-mix(in srgb,var(--graphite) 35%,transparent);border-color:var(--graphite)}
+  .report-actions{display:flex;flex-wrap:wrap;gap:10px}
+  .action{font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;border-radius:8px;padding:10px 16px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+  .action:hover{border-color:var(--graphite)}
+  .action.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .action.primary:hover{background:#0f1620}
+  .action.ghost{color:var(--muted)}
+  .filelabel input{display:none}
+  .rhint{font-size:13px;color:var(--muted);margin-top:12px}
+
+  .fab{position:fixed;right:22px;bottom:22px;z-index:50;background:var(--ink);color:#fff;border:0;border-radius:999px;padding:13px 20px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(20,27,36,.28)}
+  .fab:hover{background:#0f1620}
+
+  .foot{max-width:1180px;margin:0 auto;padding:30px 24px 60px;color:var(--faint);font-size:13.5px;border-top:1px solid var(--line)}
+
+  /* ---- report (print) ---- */
+  #report{display:none}
+  #report .r-h1{font-family:var(--display);font-size:24px;font-weight:700;margin:0 0 4px}
+  #report .r-meta{color:#333;font-size:14px;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:10px}
+  #report .r-lab{margin:16px 0;page-break-inside:avoid}
+  #report .r-lab h3{font-family:var(--display);font-size:17px;margin:0 0 8px;border-left:4px solid #999;padding-left:10px}
+  #report .r-czesc{font-weight:600;font-size:14px;margin:14px 0 4px;border-bottom:1px solid #ccc}
+  #report .r-task{margin:9px 0 13px;page-break-inside:avoid}
+  #report .r-q{font-size:14px;margin:0 0 5px}
+  #report .r-q b{font-family:var(--mono)}
+  #report pre.r-a{margin:0;background:#f3f4f6;border:1px solid #dcdfe4;border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:12.4px;white-space:pre-wrap;word-break:break-word}
+  #report .r-empty{color:#999;font-style:italic;font-size:14px}
+  @media print{
+    .topbar,.layout,.foot,.fab{display:none!important}
+    #report{display:block!important;color:#111;font-family:var(--sans);max-width:820px;margin:0 auto;padding:6px}
+    body{background:#fff}
+    @page{margin:16mm}
+  }
+
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+    .sidebar{display:none}
+    .topbar-inner{padding:11px 16px}
+    .legend{width:100%;margin-left:0}
+    main{padding:26px 0 80px}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+
+  /* ---- dodatki wersji z generatora ---- */
+  details.script{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--e,var(--graphite));border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+  details.script>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;padding:14px 18px;font-family:var(--display);font-weight:600}
+  details.script>summary::-webkit-details-marker{display:none}
+  details.script>summary .fname{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--muted);margin-left:auto}
+  details.script .cmd{margin:0 14px 14px}
+  details.script .sdesc{margin:0 18px 10px;font-size:14px;color:var(--muted)}
+  .cmd pre.tall{max-height:420px;overflow:auto}
+  .conn-card{background:color-mix(in srgb,var(--e) 8%,transparent);border:1px solid color-mix(in srgb,var(--e) 25%,transparent);border-radius:var(--radius-sm);padding:10px 14px;margin:14px 0 4px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px;color:var(--muted)}
+  .conn-card b{color:var(--ink);font-family:var(--mono);font-weight:500}
+  .filecap{font-family:var(--mono);font-size:12px;color:var(--faint);margin:14px 0 -4px}
+  .gen-note{font-size:12.5px;color:var(--faint)}
+
+  /* podpowiedzi pod zadaniami */
+  details.hint{font-size:13.5px;color:var(--muted)}
+  details.hint>summary{cursor:pointer;color:var(--e);font-weight:600;font-size:12.5px;width:max-content;list-style:none}
+  details.hint>summary::before{content:"? ";font-weight:700}
+  details.hint>summary::-webkit-details-marker{display:none}
+  details.hint[open]>summary{margin-bottom:6px}
+  .hint-body{background:var(--paper);border-left:3px solid var(--e);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px}
+  .hint-body p{margin:0 0 8px}
+  .hint-tab{border-collapse:collapse;font-size:13px;margin:4px 0 8px;width:100%}
+  .hint-tab th,.hint-tab td{border:1px solid var(--line, #dcdfe4);padding:4px 8px;text-align:left;vertical-align:top}
+  .hint-tab th{color:var(--ink)}
+  @media print{details.hint{display:none}}
+
+  .end-note{border-left-color:var(--ink);color:var(--ink)}
+  .end-note ol{margin:8px 0 0;padding-left:20px}
+  .end-note li{margin:4px 0}
+  @media print{.end-note{display:none}}
+
+  /* FreeRTOS: pytania sprawdzające, rysunki w instrukcji, blokada przewidywania */
+  .lab-body figure{margin:12px 0 16px}
+  .lab-body figure img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
+  ol.quiz{margin:6px 0 14px;padding-left:22px}
+  ol.quiz li{margin:8px 0}
+  ol.quiz .opts{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px}
+  ol.quiz .opts label{cursor:pointer}
+  ol.quiz .why{font-size:13.5px;color:var(--muted);margin:2px 0 0}
+  .lock-row{font-size:13px;color:var(--muted)}
+  textarea.ans[readonly]{opacity:.75}
+  /* wersja STM32CubeIDE: treść zadań pod tytułem */
+  .ttext{font-size:14.5px;color:var(--muted)}
+  .ttext .tp{margin:4px 0}
+  ul.plain{margin:6px 0 8px;padding-left:20px}
+  ul.plain li{margin:3px 0}
+  .ttext ul.plain{font-size:14.5px}
+  .cheat.one{grid-template-columns:1fr;margin-top:16px}
+  .cheat .cbox .row span{color:var(--muted)}
+  #nakladka .tablewrap{margin-top:14px}
+  ol.tasks .ttext ul.plain li{position:static;display:list-item;padding:0;border:0;gap:0;margin:2px 0}
+  ol.tasks .ttext ul.plain li::before{content:none;counter-increment:none}
+  .lab-body ul.plain{font-size:15px;color:var(--muted)}
+  .lab-body ul.plain a{color:inherit}
+  .sidebar a[aria-current="page"]{color:var(--ink);font-weight:600}
+
+</style>
+</head>
+<body>
+<!-- PLIK GENEROWANY przez tools/build_site.py z labs/<wersja>/*.yaml i content/strona.yaml — nie edytuj ręcznie. -->
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Systemy operacyjne w automatyce <span class="sub">laboratorium · FreeRTOS · STM32CubeIDE · NUCLEO-G491RE + KA-Nucleo-Multisensor</span></div>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <nav id="nav">
+      <a href="#start"><span class="edot" style="--e:var(--graphite)"></span>Wprowadzenie</a>
+      <div class="navlabel">Materiały</div>
+      <a href="#nakladka"><span class="edot" style="--e:var(--graphite)"></span>Nakładka</a>
+      <div class="navlabel">Instrukcje</div>
+      <a href="#l1" style="--e:var(--rtos)"><span class="num">1/3</span><span class="edot"></span>STM32CubeIDE, peryferia i nakładka</a>
+      <a href="#l2" style="--e:var(--rtos)"><span class="num">2/3</span><span class="edot"></span>Zadania, priorytety i wyświetlacz</a>
+      <a href="#l3" style="--e:var(--rtos)"><span class="num">3/3</span><span class="edot"></span>Semafory, mutexy i stacja pomiarowa</a>
+      <div class="navlabel">Wersja instrukcji</div>
+      <a href="../index.html"><span class="edot" style="--e:var(--graphite)"></span>Podstawowa</a>
+      <a href="index.html" aria-current="page"><span class="edot" style="--e:var(--graphite)"></span>Z obserwacją pracy systemu</a>
+      <div class="navlabel">Praca studenta</div>
+      <a href="#sprawozdanie"><span class="edot" style="--e:var(--ink)"></span>Sprawozdanie (PDF)</a>
+    </nav>
+  </aside>
+
+  <main>
+    <section id="start" class="hero">
+      <p class="kicker">FreeRTOS na STM32 · STM32CubeIDE (Windows 10) · trzy laboratoria · wersja z obserwacją pracy systemu</p>
+      <h1>Systemy operacyjne<br>czasu rzeczywistego.</h1>
+      <p class="lead">Projekty przygotowujesz w środowisku STM32CubeIDE i uruchamiasz na płytce NUCLEO-G491RE z nakładką KA-Nucleo-Multisensor. Pod każdym zadaniem wpisujesz kod lub odpowiedź, a na koniec generujesz sprawozdanie w PDF.</p>
+      <div class="assign">
+        <div class="a" style="--e:var(--rtos)"><b>STM32CubeIDE, peryferia i nakładka</b><span class="eng">FreeRTOS</span><br><small>Instrukcja 1/3</small></div>
+        <div class="a" style="--e:var(--rtos)"><b>Zadania, priorytety i wyświetlacz</b><span class="eng">FreeRTOS</span><br><small>Instrukcja 2/3</small></div>
+        <div class="a" style="--e:var(--rtos)"><b>Semafory, mutexy i stacja pomiarowa</b><span class="eng">FreeRTOS</span><br><small>Instrukcja 3/3</small></div>
+      </div>
+    </section>
+
+    <section id="nakladka">
+      <h2 class="eyebrow">Materiały</h2>
+      <div class="sec-title">Nakładka KA-Nucleo-Multisensor</div>
+      <p>Płyta rozszerzeń KA-Nucleo-Multisensor na płytce NUCLEO-G491RE. Plik konfiguracyjny <code>KA_Multisensor_G491.ioc</code> (do pobrania poniżej) ma już przypisane poniższe piny wraz z etykietami (np. <code>BTN_S1</code>, <code>LD2_NUCLEO</code>). Nie zmieniaj ustawień pinów PB6–PB9: PB8 pełni też funkcję BOOT0.</p>
+      <div class="tablewrap"><table><thead><tr><th>Element</th><th>Piny</th><th>Uwagi</th></tr></thead><tbody><tr><td>Dioda LD2 (Nucleo)</td><td><code>PA5</code></td><td>stan wysoki = świeci; PA5 = TIM2_CH1</td></tr><tr><td>Przycisk B1 (Nucleo)</td><td><code>PC13</code></td><td>naciśnięty = stan wysoki</td></tr><tr><td>Przyciski S1, S2</td><td><code>PB0, PB5</code></td><td>zwierają do GND – włącz pull-up</td></tr><tr><td>Fotorezystor</td><td><code>PA1 = ADC1_IN2</code></td><td>więcej światła = niższe napięcie</td></tr><tr><td>Wyświetlacz 7-segmentowy, segmenty A–G, DP</td><td><code>PC6, PC4, PC3, PC1, PC2, PC5, PC0, PC7</code></td><td>obsługa w instrukcji 2/3</td></tr><tr><td>Wyświetlacz, pozycje COM1–COM4</td><td><code>PC11, PC10, PC9, PC8</code></td><td>aktywna = stan niski</td></tr><tr><td>4 diody RGB</td><td><code>PB6, PB7, PB8, PB9</code></td><td>tylko funkcje RGB_</td></tr><tr><td>Termometr DS18B20</td><td><code>PB4 (1-Wire)</code></td><td>tylko funkcje TEMP_</td></tr><tr><td>Barometr LPS25HB</td><td><code>PB10 (SCL), PB11 (SDA)</code></td><td>tylko funkcje BARO_</td></tr><tr><td>Akcelerometr LIS35DE</td><td><code>PB3, PA6, PA7 (SPI1), PA4 (CS), PA15 (INT1)</code></td><td>tylko funkcje ACC_</td></tr><tr><td>Port szeregowy</td><td><code>PA2, PA3 = USART2</code></td><td>wirtualny port COM programatora ST-LINK, 115200 8N1</td></tr></tbody></table></div>
+      <div class="cheat one"><div class="cbox"><h4>Biblioteka nakładki (multisensor.h)</h4><div class="row"><code>void MS_Init (void)</code><span>inicjalizacja biblioteki, wywoływana raz po funkcjach MX_..._Init()</span></div><div class="row"><code>HAL_StatusTypeDef TEMP_Read (int16_t * temp)</code><span>temperatura z DS18B20 w 0,1 °C; pomiar trwa ok. 750 ms</span></div><div class="row"><code>HAL_StatusTypeDef BARO_Read (uint16_t * press, int16_t * temp)</code><span>ciśnienie w 0,1 hPa i temperatura w 0,1 °C z LPS25HB</span></div><div class="row"><code>HAL_StatusTypeDef ACC_Read (int16_t * x, int16_t * y, int16_t * z)</code><span>przyspieszenie w osiach X, Y, Z w mg</span></div><div class="row"><code>void RGB_Set (uint8_t led, enum rgbColor color)</code><span>zapala diodę 0–3 w kolorze RGB_RED, RGB_GREEN lub RGB_BLUE; pozostałe gasną</span></div><div class="row"><code>void RGB_Off (void)</code><span>gasi wszystkie diody RGB</span></div><div class="row"><code>void DISP_SetSegments (enum dispSeg seg)</code><span>zapala segmenty z maski, np. DISP_SEG_B | DISP_SEG_C; pozostałe gasi</span></div><div class="row"><code>void DISP_SetPositions (enum dispPos pos)</code><span>aktywuje pozycje z maski, np. DISP_POS_1 | DISP_POS_2 (COM w stanie niskim)</span></div><div class="row"><code>void DISP_SetDigit (uint8_t digit)</code><span>zapala segmenty cyfry 0–9 na wybranych pozycjach</span></div></div></div>
+      <details class="script"><summary>multisensor.h<span class="fname">do katalogu Core/Inc projektu</span></summary><div class="cmd"><pre class="tall"><code>/**
+ * @file    multisensor.h
+ * @brief   Biblioteka nakładki KA-Nucleo-Multisensor dla NUCLEO-G491RE (HAL, STM32CubeIDE).
+ *
+ * Instalacja: multisensor.h → Core/Inc, multisensor.c → Core/Src.
+ * Użycie:     #include "multisensor.h", a w main() po funkcjach MX_..._Init():  MS_Init();
+ *
+ * Biblioteka sama konfiguruje piny, których używa (wyświetlacz, diody RGB, 1-Wire,
+ * programowe I2C, SPI1 akcelerometru). Nie korzysta z przerwań ani z liczników.
+ * Po dodaniu FreeRTOS czekanie na wynik pomiaru temperatury oddaje procesor
+ * (vTaskDelay), a bez FreeRTOS jest to HAL_Delay.
+ *
+ * Funkcje czujników są blokujące i nie są chronione przed jednoczesnym użyciem
+ * z kilku zadań – czujnik powinno obsługiwać jedno zadanie albo mutex.
+ */
+#ifndef MULTISENSOR_H
+#define MULTISENSOR_H
+
+#include "main.h"      /* stm32g4xx_hal.h: HAL_StatusTypeDef, HAL_Delay */
+#include &lt;stdint.h&gt;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* ------------------------------------------------------------------ inicjalizacja */
+
+/** Konfiguracja pinów i czujników nakładki. Wywołać raz, po funkcjach MX_..._Init(). */
+void MS_Init(void);
+
+/* ------------------------------------------------------------------ czujniki */
+
+/** Temperatura z termometru DS18B20 w 0,1 °C (np. 215 = 21,5 °C). Pomiar trwa ok. 750 ms. */
+HAL_StatusTypeDef TEMP_Read(int16_t *temp);
+
+/** Ciśnienie z barometru LPS25HB w 0,1 hPa (np. 10132 = 1013,2 hPa) i temperatura w 0,1 °C.
+ *  Barometr mierzy w sposób ciągły 7 razy na sekundę; wskaźnik temp może być NULL. */
+HAL_StatusTypeDef BARO_Read(uint16_t *press, int16_t *temp);
+
+/** Przyspieszenie w osiach X, Y, Z z akcelerometru LIS35DE w mg (zakres ±2 g, 100 pomiarów/s).
+ *  Płytka leżąca płasko: x ≈ 0, y ≈ 0, z ≈ 1000. */
+HAL_StatusTypeDef ACC_Read(int16_t *x, int16_t *y, int16_t *z);
+
+/* ------------------------------------------------------------------ diody RGB */
+
+enum rgbColor { RGB_RED = 0, RGB_GREEN = 1, RGB_BLUE = 2 };
+
+/** Zapala diodę led (0–3) w jednym kolorze; pozostałe diody gasną.
+ *  Diody są połączone metodą charlieplexingu: jednocześnie może świecić tylko jedna. */
+void RGB_Set(uint8_t led, enum rgbColor color);
+
+/** Gasi wszystkie diody RGB. */
+void RGB_Off(void);
+
+/* ------------------------------------------------------------------ wyświetlacz */
+
+/** Segmenty (maska bitowa, można łączyć operatorem |). Stan wysoki zapala segment. */
+enum dispSeg {
+  DISP_SEG_NONE = 0x00,
+  DISP_SEG_A = 0x01, DISP_SEG_B = 0x02, DISP_SEG_C = 0x04, DISP_SEG_D = 0x08,
+  DISP_SEG_E = 0x10, DISP_SEG_F = 0x20, DISP_SEG_G = 0x40, DISP_SEG_DP = 0x80
+};
+
+/** Pozycje (cyfry) wyświetlacza (maska bitowa, można łączyć operatorem |).
+ *  Wybrana pozycja dostaje na wyjściu COM stan niski. */
+enum dispPos {
+  DISP_POS_NONE = 0x00,
+  DISP_POS_1 = 0x01, DISP_POS_2 = 0x02, DISP_POS_3 = 0x04, DISP_POS_4 = 0x08,
+  DISP_POS_ALL = 0x0F
+};
+
+/** Ustawia stan wszystkich linii segmentów A–G i DP: zapalone są segmenty z maski seg. */
+void DISP_SetSegments(enum dispSeg seg);
+
+/** Ustawia stan wyjść COM1–COM4: aktywne są pozycje z maski pos, pozostałe wyłączone. */
+void DISP_SetPositions(enum dispPos pos);
+
+/** Ustawia segmenty cyfry 0–9 (inna wartość gasi segmenty). Pozycje wybiera DISP_SetPositions(). */
+void DISP_SetDigit(uint8_t digit);
+
+/* UWAGA (prąd): wyjścia COM są połączone z pinami mikrokontrolera bez tranzystorów, jeden
+ * segment pobiera ok. 6 mA. Bez multipleksowania zapalaj najwyżej 3 segmenty na jednej
+ * pozycji i ten sam segment na najwyżej 3 pozycjach. */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* MULTISENSOR_H */</code></pre><div class="btns"><button class="btn cp" type="button">Kopiuj</button><button class="btn dl" type="button" data-name="multisensor.h">Pobierz</button></div></div></details>
+      <details class="script"><summary>multisensor.c<span class="fname">do katalogu Core/Src projektu</span></summary><div class="cmd"><pre class="tall"><code>/**
+ * @file    multisensor.c
+ * @brief   Biblioteka nakładki KA-Nucleo-Multisensor dla NUCLEO-G491RE (opis funkcji w multisensor.h).
+ *
+ * Sterowniki przeniesione z firmware testowego KA_Multisensor_G491 (sprawdzonego na płytce):
+ *  - DS18B20 (1-Wire, PB4)       – szczeliny czasowe liczone licznikiem cykli DWT,
+ *  - LPS25HB (I2C, PB10/PB11)    – I2C programowe: STM32G491 nie ma sprzętowego I2C na tych pinach,
+ *  - LIS35DE (SPI1, CS PA4)      – SPI w trybie 3, 5,3 MHz,
+ *  - diody RGB (PB6–PB9)         – charlieplexing: dioda świeci, gdy anoda = 1, katoda = 0,
+ *                                  pozostałe linie w stanie wysokiej impedancji,
+ *  - wyświetlacz (PC0–PC11)      – bezpośrednie sterowanie liniami segmentów i COM.
+ *
+ * Piny konfiguruje MS_Init() – biblioteka działa także w projekcie, w którym CubeMX
+ * tych pinów nie ustawił.
+ */
+#include "multisensor.h"
+
+#if defined(__has_include)
+#if __has_include("FreeRTOS.h") &amp;&amp; __has_include("task.h")
+#include "FreeRTOS.h"
+#include "task.h"
+#if (INCLUDE_xTaskGetSchedulerState == 1) || (configUSE_TIMERS == 1)
+#define MS_RTOS 1
+#endif
+#endif
+#endif
+
+/* ------------------------------------------------------------------ czas */
+
+static void ms_delay(uint32_t ms)
+{
+#ifdef MS_RTOS
+  if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)
+  {
+    const TickType_t t = pdMS_TO_TICKS(ms);
+    vTaskDelay((t &gt; 0U) ? t : 1U);      /* zadanie czeka, procesor wolny */
+    return;
+  }
+#endif
+  HAL_Delay(ms);
+}
+
+static void delay_us(uint32_t us)
+{
+  /* DWT-&gt;CYCCNT liczy cykle zegara rdzenia (170 MHz → 170 cykli na mikrosekundę). */
+  const uint32_t start = DWT-&gt;CYCCNT;
+  const uint32_t ticks = us * (SystemCoreClock / 1000000U);
+  while ((DWT-&gt;CYCCNT - start) &lt; ticks)
+  {
+  }
+}
+
+/* ------------------------------------------------------------------ wyświetlacz */
+
+/* Piny portu C: segmenty A, B, C, D, E, F, G, DP oraz wyjścia COM1–COM4.
+ * Kolejność COM (która pozycja jest pierwsza od lewej) – do sprawdzenia na płytce:
+ * DISP_SetPositions(DISP_POS_1) powinno zapalić skrajną lewą cyfrę. */
+static const uint8_t k_seg_pin[8] = { 6U, 4U, 3U, 1U, 2U, 5U, 0U, 7U };
+static const uint8_t k_com_pin[4] = { 11U, 10U, 9U, 8U };
+
+static const uint8_t k_digit[10] = {
+  DISP_SEG_A | DISP_SEG_B | DISP_SEG_C | DISP_SEG_D | DISP_SEG_E | DISP_SEG_F,               /* 0 */
+  DISP_SEG_B | DISP_SEG_C,                                                                 /* 1 */
+  DISP_SEG_A | DISP_SEG_B | DISP_SEG_D | DISP_SEG_E | DISP_SEG_G,                          /* 2 */
+  DISP_SEG_A | DISP_SEG_B | DISP_SEG_C | DISP_SEG_D | DISP_SEG_G,                          /* 3 */
+  DISP_SEG_B | DISP_SEG_C | DISP_SEG_F | DISP_SEG_G,                                       /* 4 */
+  DISP_SEG_A | DISP_SEG_C | DISP_SEG_D | DISP_SEG_F | DISP_SEG_G,                          /* 5 */
+  DISP_SEG_A | DISP_SEG_C | DISP_SEG_D | DISP_SEG_E | DISP_SEG_F | DISP_SEG_G,             /* 6 */
+  DISP_SEG_A | DISP_SEG_B | DISP_SEG_C,                                                    /* 7 */
+  DISP_SEG_A | DISP_SEG_B | DISP_SEG_C | DISP_SEG_D | DISP_SEG_E | DISP_SEG_F | DISP_SEG_G,/* 8 */
+  DISP_SEG_A | DISP_SEG_B | DISP_SEG_C | DISP_SEG_D | DISP_SEG_F | DISP_SEG_G,             /* 9 */
+};
+
+void DISP_SetSegments(enum dispSeg seg)
+{
+  uint32_t set = 0U;
+  uint32_t reset = 0U;
+  for (uint32_t i = 0U; i &lt; 8U; i++)
+  {
+    if (((uint32_t)seg &amp; (1UL &lt;&lt; i)) != 0U)
+    {
+      set |= 1UL &lt;&lt; k_seg_pin[i];
+    }
+    else
+    {
+      reset |= 1UL &lt;&lt; k_seg_pin[i];
+    }
+  }
+  GPIOC-&gt;BSRR = set | (reset &lt;&lt; 16);     /* jeden zapis – wszystkie linie naraz */
+}
+
+void DISP_SetPositions(enum dispPos pos)
+{
+  uint32_t set = 0U;
+  uint32_t reset = 0U;
+  for (uint32_t i = 0U; i &lt; 4U; i++)
+  {
+    if (((uint32_t)pos &amp; (1UL &lt;&lt; i)) != 0U)
+    {
+      reset |= 1UL &lt;&lt; k_com_pin[i];     /* aktywna pozycja: COM w stanie niskim */
+    }
+    else
+    {
+      set |= 1UL &lt;&lt; k_com_pin[i];
+    }
+  }
+  GPIOC-&gt;BSRR = set | (reset &lt;&lt; 16);
+}
+
+void DISP_SetDigit(uint8_t digit)
+{
+  DISP_SetSegments((enum dispSeg)((digit &lt; 10U) ? k_digit[digit] : DISP_SEG_NONE));
+}
+
+/* ------------------------------------------------------------------ diody RGB */
+
+#define RGB_LINE0  6U                         /* linie L0..L3 = PB6..PB9 */
+#define RGB_MODER  (0xFFUL &lt;&lt; (RGB_LINE0 * 2U))
+
+/* Numer kombinacji (anoda, katoda) dla [dioda][kolor]. Kombinacja n: anoda = n / 3,
+ * katoda = (n % 3)-ta z pozostałych linii. Mapa do sprawdzenia na płytce
+ * (test RGB_MAP w firmware KA_Multisensor_G491). */
+static const uint8_t k_rgb_map[4][3] = {
+  /*        R   G   B */
+  /* 0 */ { 0,  1,  2 },
+  /* 1 */ { 3,  4,  5 },
+  /* 2 */ { 6,  7,  8 },
+  /* 3 */ { 9, 10, 11 },
+};
+
+void RGB_Off(void)
+{
+  GPIOB-&gt;MODER &amp;= ~RGB_MODER;                 /* wszystkie linie jako wejścia (Hi-Z) */
+  GPIOB-&gt;BSRR = (0x0FUL &lt;&lt; RGB_LINE0) &lt;&lt; 16;  /* ODR = 0 */
+}
+
+void RGB_Set(uint8_t led, enum rgbColor color)
+{
+  if ((led &gt; 3U) || ((uint32_t)color &gt; 2U))
+  {
+    RGB_Off();
+    return;
+  }
+  const uint8_t n = k_rgb_map[led][color];
+  const uint32_t a = n / 3U;
+  uint32_t k = n % 3U;
+  if (k &gt;= a)
+  {
+    k++;
+  }
+  const uint32_t pa = RGB_LINE0 + a;
+  const uint32_t pk = RGB_LINE0 + k;
+  RGB_Off();
+  GPIOB-&gt;BSRR = (1UL &lt;&lt; pa) | (1UL &lt;&lt; (pk + 16U));            /* najpierw poziomy...   */
+  GPIOB-&gt;MODER |= (1UL &lt;&lt; (pa * 2U)) | (1UL &lt;&lt; (pk * 2U));    /* ...potem dwa wyjścia  */
+}
+
+/* ------------------------------------------------------------------ 1-Wire, DS18B20 (PB4) */
+
+#define OW_PIN 4U
+
+static inline void ow_low(void)     { GPIOB-&gt;BSRR = 1UL &lt;&lt; (OW_PIN + 16U); }
+static inline void ow_release(void) { GPIOB-&gt;BSRR = 1UL &lt;&lt; OW_PIN; }
+static inline uint32_t ow_level(void) { return (GPIOB-&gt;IDR &gt;&gt; OW_PIN) &amp; 1UL; }
+
+/* Szczeliny 1-Wire trwają kilkadziesiąt mikrosekund; przerwanie w środku szczeliny
+ * zmieniłoby bit, dlatego wykonujemy je z zablokowanymi przerwaniami. */
+static int ow_reset(void)
+{
+  ow_low();
+  delay_us(480U);
+  const uint32_t pm = __get_PRIMASK();
+  __disable_irq();
+  ow_release();
+  delay_us(70U);
+  const int presence = (ow_level() == 0U);
+  __set_PRIMASK(pm);
+  delay_us(410U);
+  return presence;
+}
+
+static void ow_write_bit(uint32_t bit)
+{
+  const uint32_t pm = __get_PRIMASK();
+  __disable_irq();
+  ow_low();
+  delay_us(bit ? 6U : 60U);
+  ow_release();
+  __set_PRIMASK(pm);
+  delay_us(bit ? 64U : 10U);
+}
+
+static uint32_t ow_read_bit(void)
+{
+  const uint32_t pm = __get_PRIMASK();
+  __disable_irq();
+  ow_low();
+  delay_us(6U);
+  ow_release();
+  delay_us(9U);
+  const uint32_t bit = ow_level();
+  __set_PRIMASK(pm);
+  delay_us(55U);
+  return bit;
+}
+
+static void ow_write_byte(uint8_t b)
+{
+  for (uint32_t i = 0U; i &lt; 8U; i++)            /* najmłodszy bit pierwszy */
+  {
+    ow_write_bit(b &amp; 1U);
+    b &gt;&gt;= 1;
+  }
+}
+
+static uint8_t ow_read_byte(void)
+{
+  uint8_t b = 0U;
+  for (uint32_t i = 0U; i &lt; 8U; i++)
+  {
+    b = (uint8_t)((b &gt;&gt; 1) | (ow_read_bit() &lt;&lt; 7));
+  }
+  return b;
+}
+
+static uint8_t ow_crc8(const uint8_t *d, uint32_t len)
+{
+  uint8_t crc = 0U;
+  for (uint32_t i = 0U; i &lt; len; i++)
+  {
+    uint8_t b = d[i];
+    for (uint32_t j = 0U; j &lt; 8U; j++)
+    {
+      const uint8_t mix = (uint8_t)((crc ^ b) &amp; 1U);
+      crc &gt;&gt;= 1;
+      if (mix != 0U)
+      {
+        crc ^= 0x8CU;
+      }
+      b &gt;&gt;= 1;
+    }
+  }
+  return crc;
+}
+
+HAL_StatusTypeDef TEMP_Read(int16_t *temp)
+{
+  uint8_t sp[9];
+  if (temp == NULL)
+  {
+    return HAL_ERROR;
+  }
+  if (!ow_reset())
+  {
+    return HAL_ERROR;                            /* brak impulsu obecności */
+  }
+  ow_write_byte(0xCCU);                          /* SKIP ROM – jeden układ na linii */
+  ow_write_byte(0x44U);                          /* CONVERT T */
+  const uint32_t t0 = HAL_GetTick();
+  do
+  {
+    ms_delay(10U);
+    if ((HAL_GetTick() - t0) &gt; 1000U)
+    {
+      return HAL_TIMEOUT;
+    }
+  } while (ow_read_bit() == 0U);                 /* w trakcie pomiaru układ odpowiada zerem */
+
+  if (!ow_reset())
+  {
+    return HAL_ERROR;
+  }
+  ow_write_byte(0xCCU);
+  ow_write_byte(0xBEU);                          /* READ SCRATCHPAD */
+  for (uint32_t i = 0U; i &lt; 9U; i++)
+  {
+    sp[i] = ow_read_byte();
+  }
+  if (ow_crc8(sp, 8U) != sp[8])
+  {
+    return HAL_ERROR;
+  }
+  const int16_t raw = (int16_t)(((uint16_t)sp[1] &lt;&lt; 8) | sp[0]);   /* 1/16 °C */
+  *temp = (int16_t)(((int32_t)raw * 10) / 16);
+  return HAL_OK;
+}
+
+/* ------------------------------------------------------------------ I2C programowe, LPS25HB */
+
+#define SCL_PIN   10U
+#define SDA_PIN   11U
+#define HALF_US   5U                             /* ~100 kHz */
+#define LPS_ADDR  0x5CU
+
+static inline void scl_high(void) { GPIOB-&gt;BSRR = 1UL &lt;&lt; SCL_PIN; }
+static inline void scl_low(void)  { GPIOB-&gt;BSRR = 1UL &lt;&lt; (SCL_PIN + 16U); }
+static inline void sda_high(void) { GPIOB-&gt;BSRR = 1UL &lt;&lt; SDA_PIN; }
+static inline void sda_low(void)  { GPIOB-&gt;BSRR = 1UL &lt;&lt; (SDA_PIN + 16U); }
+static inline uint32_t sda_read(void) { return (GPIOB-&gt;IDR &gt;&gt; SDA_PIN) &amp; 1UL; }
+
+static void scl_release(void)
+{
+  scl_high();
+  const uint32_t t0 = DWT-&gt;CYCCNT;               /* układ może przytrzymać SCL (clock stretching) */
+  while ((((GPIOB-&gt;IDR &gt;&gt; SCL_PIN) &amp; 1UL) == 0U) &amp;&amp;
+         ((DWT-&gt;CYCCNT - t0) &lt; 1000U * (SystemCoreClock / 1000000U)))
+  {
+  }
+}
+
+static void i2c_start(void)
+{
+  sda_high(); scl_release(); delay_us(HALF_US);
+  sda_low();  delay_us(HALF_US);
+  scl_low();
+}
+
+static void i2c_stop(void)
+{
+  sda_low();  delay_us(HALF_US);
+  scl_release(); delay_us(HALF_US);
+  sda_high(); delay_us(HALF_US);
+}
+
+static int i2c_write(uint8_t b)
+{
+  for (uint32_t i = 0U; i &lt; 8U; i++)
+  {
+    if ((b &amp; 0x80U) != 0U) { sda_high(); } else { sda_low(); }
+    b = (uint8_t)(b &lt;&lt; 1);
+    delay_us(HALF_US); scl_release(); delay_us(HALF_US); scl_low();
+  }
+  sda_high();
+  delay_us(HALF_US); scl_release();
+  const int ack = (sda_read() == 0U);
+  delay_us(HALF_US); scl_low();
+  return ack;
+}
+
+static uint8_t i2c_read(int ack)
+{
+  uint8_t b = 0U;
+  sda_high();
+  for (uint32_t i = 0U; i &lt; 8U; i++)
+  {
+    delay_us(HALF_US); scl_release();
+    b = (uint8_t)((b &lt;&lt; 1) | sda_read());
+    delay_us(HALF_US); scl_low();
+  }
+  if (ack) { sda_low(); } else { sda_high(); }
+  delay_us(HALF_US); scl_release(); delay_us(HALF_US); scl_low();
+  sda_high();
+  return b;
+}
+
+static HAL_StatusTypeDef lps_write(uint8_t reg, uint8_t val)
+{
+  i2c_start();
+  const int ok = i2c_write(LPS_ADDR &lt;&lt; 1) &amp;&amp; i2c_write(reg) &amp;&amp; i2c_write(val);
+  i2c_stop();
+  return ok ? HAL_OK : HAL_ERROR;
+}
+
+static HAL_StatusTypeDef lps_read(uint8_t reg, uint8_t *buf, uint32_t len)
+{
+  i2c_start();
+  int ok = i2c_write(LPS_ADDR &lt;&lt; 1) &amp;&amp; i2c_write((uint8_t)(reg | 0x80U));  /* bit 7: autoinkrementacja */
+  if (ok)
+  {
+    i2c_start();                                 /* powtórzony START – odczyt */
+    ok = i2c_write((uint8_t)((LPS_ADDR &lt;&lt; 1) | 1U));
+  }
+  for (uint32_t i = 0U; ok &amp;&amp; (i &lt; len); i++)
+  {
+    buf[i] = i2c_read(i &lt; (len - 1U));           /* ostatni bajt bez potwierdzenia */
+  }
+  i2c_stop();
+  return ok ? HAL_OK : HAL_ERROR;
+}
+
+HAL_StatusTypeDef BARO_Read(uint16_t *press, int16_t *temp)
+{
+  uint8_t b[5];
+  if (press == NULL)
+  {
+    return HAL_ERROR;
+  }
+  if (lps_read(0x28U, b, 5U) != HAL_OK)          /* PRESS_OUT_XL..H, TEMP_OUT_L..H */
+  {
+    return HAL_ERROR;
+  }
+  const uint32_t p = ((uint32_t)b[2] &lt;&lt; 16) | ((uint32_t)b[1] &lt;&lt; 8) | b[0];   /* 1/4096 hPa */
+  const int16_t t = (int16_t)(((uint16_t)b[4] &lt;&lt; 8) | b[3]);                   /* 42,5 °C + t/480 */
+  *press = (uint16_t)((p * 10U) / 4096U);
+  if (temp != NULL)
+  {
+    *temp = (int16_t)(425 + t / 48);
+  }
+  return HAL_OK;
+}
+
+/* ------------------------------------------------------------------ SPI1, LIS35DE */
+
+#define ACC_CS_PIN 4U                            /* PA4 */
+
+static uint8_t spi_xfer(uint8_t tx)
+{
+  while ((SPI1-&gt;SR &amp; SPI_SR_TXE) == 0U)
+  {
+  }
+  *(volatile uint8_t *)&amp;SPI1-&gt;DR = tx;           /* zapis 8-bitowy – jedna ramka */
+  while ((SPI1-&gt;SR &amp; SPI_SR_RXNE) == 0U)
+  {
+  }
+  return *(volatile uint8_t *)&amp;SPI1-&gt;DR;
+}
+
+static void acc_cs(int active)
+{
+  if (active)
+  {
+    GPIOA-&gt;BSRR = 1UL &lt;&lt; (ACC_CS_PIN + 16U);
+  }
+  else
+  {
+    while ((SPI1-&gt;SR &amp; SPI_SR_BSY) != 0U)
+    {
+    }
+    GPIOA-&gt;BSRR = 1UL &lt;&lt; ACC_CS_PIN;
+  }
+}
+
+static void acc_write(uint8_t reg, uint8_t val)
+{
+  acc_cs(1);
+  (void)spi_xfer(reg &amp; 0x3FU);
+  (void)spi_xfer(val);
+  acc_cs(0);
+}
+
+HAL_StatusTypeDef ACC_Read(int16_t *x, int16_t *y, int16_t *z)
+{
+  uint8_t b[5];
+  if ((x == NULL) || (y == NULL) || (z == NULL))
+  {
+    return HAL_ERROR;
+  }
+  acc_cs(1);
+  (void)spi_xfer(0x80U | 0x40U | 0x29U);         /* odczyt, autoinkrementacja, OUT_X */
+  for (uint32_t i = 0U; i &lt; 5U; i++)             /* OUT_X, -, OUT_Y, -, OUT_Z */
+  {
+    b[i] = spi_xfer(0x00U);
+  }
+  acc_cs(0);
+  *x = (int16_t)((int8_t)b[0] * 18);             /* 18 mg na jednostkę przy ±2 g */
+  *y = (int16_t)((int8_t)b[2] * 18);
+  *z = (int16_t)((int8_t)b[4] * 18);
+  return HAL_OK;
+}
+
+/* ------------------------------------------------------------------ inicjalizacja */
+
+static void pin(GPIO_TypeDef *port, uint32_t pins, uint32_t mode, uint32_t alt)
+{
+  GPIO_InitTypeDef g = {0};
+  g.Pin = pins;
+  g.Mode = mode;
+  g.Pull = GPIO_NOPULL;
+  g.Speed = GPIO_SPEED_FREQ_LOW;
+  g.Alternate = alt;
+  HAL_GPIO_Init(port, &amp;g);
+}
+
+void MS_Init(void)
+{
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_RCC_SPI1_CLK_ENABLE();
+
+  /* PB4 i PB6 po resecie mogą mieć wewnętrzny pull-down kontrolera USB-C (UCPD). */
+  PWR-&gt;CR3 |= PWR_CR3_UCPD_DBDIS;
+
+  /* Licznik cykli DWT do opóźnień mikrosekundowych. */
+  CoreDebug-&gt;DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT-&gt;CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+  /* Wyświetlacz: wszystko zgaszone, potem wyjścia PC0–PC11. */
+  DISP_SetSegments(DISP_SEG_NONE);
+  DISP_SetPositions(DISP_POS_NONE);
+  pin(GPIOC, 0x0FFFU, GPIO_MODE_OUTPUT_PP, 0U);
+
+  /* Diody RGB: linie PB6–PB9 w stanie wysokiej impedancji. */
+  RGB_Off();
+  GPIOB-&gt;PUPDR &amp;= ~RGB_MODER;
+
+  /* 1-Wire PB4 oraz I2C PB10/PB11: open-drain, linia zwolniona (pull-upy na nakładce). */
+  GPIOB-&gt;BSRR = (1UL &lt;&lt; OW_PIN) | (1UL &lt;&lt; SCL_PIN) | (1UL &lt;&lt; SDA_PIN);
+  pin(GPIOB, (1UL &lt;&lt; OW_PIN) | (1UL &lt;&lt; SCL_PIN) | (1UL &lt;&lt; SDA_PIN), GPIO_MODE_OUTPUT_OD, 0U);
+
+  /* SPI1: PB3 SCK, PA6 MISO, PA7 MOSI (AF5), PA4 CS; master, tryb 3, 170 MHz / 32. */
+  GPIOA-&gt;BSRR = 1UL &lt;&lt; ACC_CS_PIN;
+  pin(GPIOA, 1UL &lt;&lt; ACC_CS_PIN, GPIO_MODE_OUTPUT_PP, 0U);
+  pin(GPIOB, GPIO_PIN_3, GPIO_MODE_AF_PP, GPIO_AF5_SPI1);
+  pin(GPIOA, GPIO_PIN_6 | GPIO_PIN_7, GPIO_MODE_AF_PP, GPIO_AF5_SPI1);
+  SPI1-&gt;CR1 = 0U;
+  SPI1-&gt;CR1 = SPI_CR1_MSTR | SPI_CR1_CPOL | SPI_CR1_CPHA | (4UL &lt;&lt; SPI_CR1_BR_Pos) | SPI_CR1_SSM | SPI_CR1_SSI;
+  SPI1-&gt;CR2 = (7UL &lt;&lt; SPI_CR2_DS_Pos) | SPI_CR2_FRXTH;
+  SPI1-&gt;CR1 |= SPI_CR1_SPE;
+
+  /* Odblokowanie magistrali I2C (do 9 taktów SCL), potem STOP. */
+  for (uint32_t i = 0U; (i &lt; 9U) &amp;&amp; (sda_read() == 0U); i++)
+  {
+    scl_low(); delay_us(HALF_US); scl_release(); delay_us(HALF_US);
+  }
+  i2c_stop();
+
+  /* LIS35DE: przeładowanie kalibracji, potem 100 Hz, ±2 g, osie X, Y, Z. */
+  acc_write(0x21U, 0x40U);                       /* CTRL_REG2: BOOT */
+  HAL_Delay(5U);
+  acc_write(0x20U, 0x47U);                       /* CTRL_REG1: PD | Zen | Yen | Xen */
+
+  /* LPS25HB: przeładowanie kalibracji, potem pomiar ciągły 7 Hz z BDU. */
+  (void)lps_write(0x21U, 0x80U);                 /* CTRL_REG2: BOOT */
+  HAL_Delay(5U);
+  (void)lps_write(0x20U, 0xA4U);                 /* CTRL_REG1: PD | ODR 7 Hz | BDU */
+  HAL_Delay(200U);                               /* pierwsze wyniki obu czujników */
+}</code></pre><div class="btns"><button class="btn cp" type="button">Kopiuj</button><button class="btn dl" type="button" data-name="multisensor.c">Pobierz</button></div></div></details>
+      <details class="script"><summary>KA_Multisensor_G491.ioc<span class="fname">plik konfiguracyjny STM32CubeMX (HAL, STM32CubeIDE)</span></summary><div class="cmd"><pre class="tall"><code>#MicroXplorer Configuration settings - do not modify
+ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_2
+ADC1.CommonPathInternal=null|null|null|null
+ADC1.IPParameters=Rank-0\#ChannelRegularConversion,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,OffsetNumber-0\#ChannelRegularConversion,NbrOfConversionFlag,master,CommonPathInternal
+ADC1.NbrOfConversionFlag=1
+ADC1.OffsetNumber-0\#ChannelRegularConversion=ADC_OFFSET_NONE
+ADC1.Rank-0\#ChannelRegularConversion=1
+ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_47CYCLES_5
+ADC1.master=1
+CAD.formats=
+CAD.pinconfig=
+CAD.provider=
+File.Version=6
+KeepUserPlacement=false
+Mcu.CPN=STM32G491RET6
+Mcu.Family=STM32G4
+Mcu.IP0=ADC1
+Mcu.IP1=NVIC
+Mcu.IP2=RCC
+Mcu.IP3=SPI1
+Mcu.IP4=SYS
+Mcu.IP5=USART2
+Mcu.IP6=USB
+Mcu.IPNb=7
+Mcu.Name=STM32G491R(C-E)Tx
+Mcu.Package=LQFP64
+Mcu.Pin0=PC13
+Mcu.Pin10=PA6
+Mcu.Pin11=PA7
+Mcu.Pin12=PC4
+Mcu.Pin13=PC5
+Mcu.Pin14=PB0
+Mcu.Pin15=PB10
+Mcu.Pin16=PB11
+Mcu.Pin17=PC6
+Mcu.Pin18=PC7
+Mcu.Pin19=PC8
+Mcu.Pin1=PC0
+Mcu.Pin20=PC9
+Mcu.Pin21=PA11
+Mcu.Pin22=PA12
+Mcu.Pin23=PA13
+Mcu.Pin24=PA14
+Mcu.Pin25=PA15
+Mcu.Pin26=PC10
+Mcu.Pin27=PC11
+Mcu.Pin28=PB3
+Mcu.Pin29=PB4
+Mcu.Pin2=PC1
+Mcu.Pin30=PB5
+Mcu.Pin31=PB6
+Mcu.Pin32=PB7
+Mcu.Pin33=PB8-BOOT0
+Mcu.Pin34=PB9
+Mcu.Pin35=VP_SYS_VS_Systick
+Mcu.Pin36=VP_SYS_VS_DBSignals
+Mcu.Pin3=PC2
+Mcu.Pin4=PC3
+Mcu.Pin5=PA1
+Mcu.Pin6=PA2
+Mcu.Pin7=PA3
+Mcu.Pin8=PA4
+Mcu.Pin9=PA5
+Mcu.PinsNb=37
+Mcu.ThirdPartyNb=0
+Mcu.UserConstants=
+Mcu.UserName=STM32G491RETx
+MxCube.Version=6.18.1
+MxDb.Version=DB.6.0.181
+NVIC.BusFault_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.DebugMonitor_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.EXTI0_IRQn=true\:5\:0\:false\:false\:true\:true\:true\:true
+NVIC.EXTI15_10_IRQn=true\:5\:0\:false\:false\:true\:true\:true\:true
+NVIC.EXTI9_5_IRQn=true\:5\:0\:false\:false\:true\:true\:true\:true
+NVIC.ForceEnableDMAVector=true
+NVIC.HardFault_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.MemoryManagement_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.NonMaskableInt_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.PendSV_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.PriorityGroup=NVIC_PRIORITYGROUP_4
+NVIC.SVCall_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+NVIC.SysTick_IRQn=true\:15\:0\:false\:false\:true\:false\:true\:false
+NVIC.UsageFault_IRQn=true\:0\:0\:false\:false\:false\:false\:false\:false
+PA1.GPIOParameters=GPIO_Label
+PA1.GPIO_Label=LDR
+PA1.Locked=true
+PA1.Mode=IN2-Single-Ended
+PA1.Signal=ADC1_IN2
+PA11.GPIOParameters=GPIO_Label
+PA11.GPIO_Label=USB_DM
+PA11.Locked=true
+PA11.Mode=Device
+PA11.Signal=USB_DM
+PA12.GPIOParameters=GPIO_Label
+PA12.GPIO_Label=USB_DP
+PA12.Locked=true
+PA12.Mode=Device
+PA12.Signal=USB_DP
+PA13.GPIOParameters=GPIO_Label
+PA13.GPIO_Label=SWDIO
+PA13.Locked=true
+PA13.Mode=Serial_Wire
+PA13.Signal=SYS_JTMS-SWDIO
+PA14.GPIOParameters=GPIO_Label
+PA14.GPIO_Label=SWCLK
+PA14.Locked=true
+PA14.Mode=Serial_Wire
+PA14.Signal=SYS_JTCK-SWCLK
+PA15.GPIOParameters=GPIO_Label,GPIO_ModeDefaultEXTI
+PA15.GPIO_Label=ACC_INT1
+PA15.GPIO_ModeDefaultEXTI=GPIO_MODE_IT_RISING
+PA15.Locked=true
+PA15.Signal=GPXTI15
+PA2.GPIOParameters=GPIO_Label
+PA2.GPIO_Label=VCP_TX
+PA2.Locked=true
+PA2.Mode=Asynchronous
+PA2.Signal=USART2_TX
+PA3.GPIOParameters=GPIO_Label
+PA3.GPIO_Label=VCP_RX
+PA3.Locked=true
+PA3.Mode=Asynchronous
+PA3.Signal=USART2_RX
+PA4.GPIOParameters=PinState,GPIO_Label
+PA4.GPIO_Label=ACC_CS
+PA4.Locked=true
+PA4.PinState=GPIO_PIN_SET
+PA4.Signal=GPIO_Output
+PA5.GPIOParameters=GPIO_Label
+PA5.GPIO_Label=LD2_NUCLEO
+PA5.Locked=true
+PA5.Signal=GPIO_Output
+PA6.GPIOParameters=GPIO_Label
+PA6.GPIO_Label=ACC_MISO
+PA6.Locked=true
+PA6.Mode=Full_Duplex_Master
+PA6.Signal=SPI1_MISO
+PA7.GPIOParameters=GPIO_Label
+PA7.GPIO_Label=ACC_MOSI
+PA7.Locked=true
+PA7.Mode=Full_Duplex_Master
+PA7.Signal=SPI1_MOSI
+PB0.GPIOParameters=GPIO_PuPd,GPIO_Label,GPIO_ModeDefaultEXTI
+PB0.GPIO_Label=BTN_S1
+PB0.GPIO_ModeDefaultEXTI=GPIO_MODE_IT_FALLING
+PB0.GPIO_PuPd=GPIO_PULLUP
+PB0.Locked=true
+PB0.Signal=GPXTI0
+PB10.GPIOParameters=PinState,GPIO_Label,GPIO_ModeDefaultOutputPP
+PB10.GPIO_Label=BARO_SCL_SW
+PB10.GPIO_ModeDefaultOutputPP=GPIO_MODE_OUTPUT_OD
+PB10.Locked=true
+PB10.PinState=GPIO_PIN_SET
+PB10.Signal=GPIO_Output
+PB11.GPIOParameters=PinState,GPIO_Label,GPIO_ModeDefaultOutputPP
+PB11.GPIO_Label=BARO_SDA_SW
+PB11.GPIO_ModeDefaultOutputPP=GPIO_MODE_OUTPUT_OD
+PB11.Locked=true
+PB11.PinState=GPIO_PIN_SET
+PB11.Signal=GPIO_Output
+PB3.GPIOParameters=GPIO_Label
+PB3.GPIO_Label=ACC_SCK
+PB3.Locked=true
+PB3.Mode=Full_Duplex_Master
+PB3.Signal=SPI1_SCK
+PB4.GPIOParameters=PinState,GPIO_Label,GPIO_ModeDefaultOutputPP
+PB4.GPIO_Label=OW_DS18B20
+PB4.GPIO_ModeDefaultOutputPP=GPIO_MODE_OUTPUT_OD
+PB4.Locked=true
+PB4.PinState=GPIO_PIN_SET
+PB4.Signal=GPIO_Output
+PB5.GPIOParameters=GPIO_PuPd,GPIO_Label,GPIO_ModeDefaultEXTI
+PB5.GPIO_Label=BTN_S2
+PB5.GPIO_ModeDefaultEXTI=GPIO_MODE_IT_FALLING
+PB5.GPIO_PuPd=GPIO_PULLUP
+PB5.Locked=true
+PB5.Signal=GPXTI5
+PB6.GPIOParameters=PinState,GPIO_Label
+PB6.GPIO_Label=RGB_L0
+PB6.Locked=true
+PB6.PinState=GPIO_PIN_RESET
+PB6.Signal=GPIO_Output
+PB7.GPIOParameters=PinState,GPIO_Label
+PB7.GPIO_Label=RGB_L1
+PB7.Locked=true
+PB7.PinState=GPIO_PIN_RESET
+PB7.Signal=GPIO_Output
+PB8-BOOT0.GPIOParameters=PinState,GPIO_Label
+PB8-BOOT0.GPIO_Label=RGB_L2
+PB8-BOOT0.Locked=true
+PB8-BOOT0.PinState=GPIO_PIN_RESET
+PB8-BOOT0.Signal=GPIO_Output
+PB9.GPIOParameters=PinState,GPIO_Label
+PB9.GPIO_Label=RGB_L3
+PB9.Locked=true
+PB9.PinState=GPIO_PIN_RESET
+PB9.Signal=GPIO_Output
+PC0.GPIOParameters=PinState,GPIO_Label
+PC0.GPIO_Label=SEG_G
+PC0.Locked=true
+PC0.PinState=GPIO_PIN_RESET
+PC0.Signal=GPIO_Output
+PC1.GPIOParameters=PinState,GPIO_Label
+PC1.GPIO_Label=SEG_D
+PC1.Locked=true
+PC1.PinState=GPIO_PIN_RESET
+PC1.Signal=GPIO_Output
+PC10.GPIOParameters=PinState,GPIO_Label
+PC10.GPIO_Label=DIG_COM2
+PC10.Locked=true
+PC10.PinState=GPIO_PIN_RESET
+PC10.Signal=GPIO_Output
+PC11.GPIOParameters=PinState,GPIO_Label
+PC11.GPIO_Label=DIG_COM1
+PC11.Locked=true
+PC11.PinState=GPIO_PIN_RESET
+PC11.Signal=GPIO_Output
+PC13.GPIOParameters=GPIO_Label,GPIO_ModeDefaultEXTI
+PC13.GPIO_Label=B1_NUCLEO
+PC13.GPIO_ModeDefaultEXTI=GPIO_MODE_IT_RISING
+PC13.Locked=true
+PC13.Signal=GPXTI13
+PC2.GPIOParameters=PinState,GPIO_Label
+PC2.GPIO_Label=SEG_E
+PC2.Locked=true
+PC2.PinState=GPIO_PIN_RESET
+PC2.Signal=GPIO_Output
+PC3.GPIOParameters=PinState,GPIO_Label
+PC3.GPIO_Label=SEG_C
+PC3.Locked=true
+PC3.PinState=GPIO_PIN_RESET
+PC3.Signal=GPIO_Output
+PC4.GPIOParameters=PinState,GPIO_Label
+PC4.GPIO_Label=SEG_B
+PC4.Locked=true
+PC4.PinState=GPIO_PIN_RESET
+PC4.Signal=GPIO_Output
+PC5.GPIOParameters=PinState,GPIO_Label
+PC5.GPIO_Label=SEG_F
+PC5.Locked=true
+PC5.PinState=GPIO_PIN_RESET
+PC5.Signal=GPIO_Output
+PC6.GPIOParameters=PinState,GPIO_Label
+PC6.GPIO_Label=SEG_A
+PC6.Locked=true
+PC6.PinState=GPIO_PIN_RESET
+PC6.Signal=GPIO_Output
+PC7.GPIOParameters=PinState,GPIO_Label
+PC7.GPIO_Label=SEG_DP
+PC7.Locked=true
+PC7.PinState=GPIO_PIN_RESET
+PC7.Signal=GPIO_Output
+PC8.GPIOParameters=PinState,GPIO_Label
+PC8.GPIO_Label=DIG_COM4
+PC8.Locked=true
+PC8.PinState=GPIO_PIN_RESET
+PC8.Signal=GPIO_Output
+PC9.GPIOParameters=PinState,GPIO_Label
+PC9.GPIO_Label=DIG_COM3
+PC9.Locked=true
+PC9.PinState=GPIO_PIN_RESET
+PC9.Signal=GPIO_Output
+PinOutPanel.RotationAngle=0
+ProjectManager.AskForMigrate=true
+ProjectManager.BackupPrevious=false
+ProjectManager.CompilerLinker=GCC
+ProjectManager.CompilerOptimize=6
+ProjectManager.ComputerToolchain=false
+ProjectManager.CoupleFile=true
+ProjectManager.CustomerFirmwarePackage=
+ProjectManager.DefaultFWLocation=true
+ProjectManager.DeletePrevious=true
+ProjectManager.DeviceId=STM32G491RETx
+ProjectManager.FirmwarePackage=STM32Cube FW_G4 V1.6.3
+ProjectManager.FreePins=false
+ProjectManager.FreePinsContext=
+ProjectManager.HalAssertFull=false
+ProjectManager.HeapSize=0x200
+ProjectManager.KeepUserCode=true
+ProjectManager.LastFirmware=true
+ProjectManager.LibraryCopy=1
+ProjectManager.MainLocation=Core/Src
+ProjectManager.NoMain=false
+ProjectManager.PreviousToolchain=
+ProjectManager.ProjectBuild=false
+ProjectManager.ProjectFileName=KA_Multisensor_G491.ioc
+ProjectManager.ProjectName=KA_Multisensor_G491
+ProjectManager.ProjectStructure=
+ProjectManager.RegisterCallBack=
+ProjectManager.StackSize=0x400
+ProjectManager.TargetToolchain=STM32CubeIDE
+ProjectManager.ToolChainLocation=
+ProjectManager.UAScriptAfterPath=
+ProjectManager.UAScriptBeforePath=
+ProjectManager.UnderRoot=true
+ProjectManager.functionlistsort=1-SystemClock_Config-RCC-false-HAL-false,2-MX_GPIO_Init-GPIO-false-HAL-true,3-MX_ADC1_Init-ADC1-false-HAL-true,4-MX_SPI1_Init-SPI1-false-HAL-true,5-MX_USART2_UART_Init-USART2-false-HAL-true,6-MX_USB_PCD_Init-USB-false-HAL-true
+RCC.ADC12Freq_Value=170000000
+RCC.ADC345Freq_Value=170000000
+RCC.AHBFreq_Value=170000000
+RCC.APB1Freq_Value=170000000
+RCC.APB1TimFreq_Value=170000000
+RCC.APB2Freq_Value=170000000
+RCC.APB2TimFreq_Value=170000000
+RCC.CRSFreq_Value=48000000
+RCC.CortexFreq_Value=170000000
+RCC.EXTERNAL_CLOCK_VALUE=12288000
+RCC.FCLKCortexFreq_Value=170000000
+RCC.FDCANFreq_Value=170000000
+RCC.FamilyName=M
+RCC.HCLKFreq_Value=170000000
+RCC.HSE_VALUE=8000000
+RCC.HSI48_VALUE=48000000
+RCC.HSI_VALUE=16000000
+RCC.I2C1Freq_Value=170000000
+RCC.I2C2Freq_Value=170000000
+RCC.I2C3Freq_Value=170000000
+RCC.I2SFreq_Value=170000000
+RCC.IPParameters=ADC12Freq_Value,ADC345Freq_Value,AHBFreq_Value,APB1Freq_Value,APB1TimFreq_Value,APB2Freq_Value,APB2TimFreq_Value,CRSFreq_Value,CortexFreq_Value,EXTERNAL_CLOCK_VALUE,FCLKCortexFreq_Value,FDCANFreq_Value,FamilyName,HCLKFreq_Value,HSE_VALUE,HSI48_VALUE,HSI_VALUE,I2C1Freq_Value,I2C2Freq_Value,I2C3Freq_Value,I2SFreq_Value,LPTIM1Freq_Value,LPUART1Freq_Value,LSCOPinFreq_Value,LSE_VALUE,LSI_VALUE,MCO1PinFreq_Value,PLLM,PLLN,PLLPoutputFreq_Value,PLLQoutputFreq_Value,PLLR,PLLRCLKFreq_Value,PLLSourceVirtual,PWRFreq_Value,QSPIFreq_Value,SAI1Freq_Value,SYSCLKFreq_VALUE,SYSCLKSource,UART4Freq_Value,UART5Freq_Value,USART1Freq_Value,USART2Freq_Value,USART3Freq_Value,USBClockSelection,VCOInputFreq_Value,VCOOutputFreq_Value
+RCC.LPTIM1Freq_Value=170000000
+RCC.LPUART1Freq_Value=170000000
+RCC.LSCOPinFreq_Value=32000
+RCC.LSE_VALUE=32768
+RCC.LSI_VALUE=32000
+RCC.MCO1PinFreq_Value=16000000
+RCC.PLLM=RCC_PLLM_DIV4
+RCC.PLLN=85
+RCC.PLLPoutputFreq_Value=170000000
+RCC.PLLQoutputFreq_Value=170000000
+RCC.PLLR=RCC_PLLR_DIV2
+RCC.PLLRCLKFreq_Value=170000000
+RCC.PLLSourceVirtual=RCC_PLLSOURCE_HSI
+RCC.PWRFreq_Value=170000000
+RCC.QSPIFreq_Value=170000000
+RCC.SAI1Freq_Value=170000000
+RCC.SYSCLKFreq_VALUE=170000000
+RCC.SYSCLKSource=RCC_SYSCLKSOURCE_PLLCLK
+RCC.UART4Freq_Value=170000000
+RCC.UART5Freq_Value=170000000
+RCC.USART1Freq_Value=170000000
+RCC.USART2Freq_Value=170000000
+RCC.USART3Freq_Value=170000000
+RCC.USBClockSelection=RCC_USBCLKSOURCE_HSI48
+RCC.VCOInputFreq_Value=4000000
+RCC.VCOOutputFreq_Value=340000000
+SH.GPXTI0.0=GPIO_EXTI0
+SH.GPXTI0.ConfNb=1
+SH.GPXTI13.0=GPIO_EXTI13
+SH.GPXTI13.ConfNb=1
+SH.GPXTI15.0=GPIO_EXTI15
+SH.GPXTI15.ConfNb=1
+SH.GPXTI5.0=GPIO_EXTI5
+SH.GPXTI5.ConfNb=1
+SPI1.BaudRatePrescaler=SPI_BAUDRATEPRESCALER_32
+SPI1.CLKPhase=SPI_PHASE_2EDGE
+SPI1.CLKPolarity=SPI_POLARITY_HIGH
+SPI1.CalculateBaudRate=5.3125 MBits/s
+SPI1.DataSize=SPI_DATASIZE_8BIT
+SPI1.Direction=SPI_DIRECTION_2LINES
+SPI1.IPParameters=VirtualType,Mode,Direction,DataSize,BaudRatePrescaler,CLKPolarity,CLKPhase,CalculateBaudRate
+SPI1.Mode=SPI_MODE_MASTER
+SPI1.VirtualType=VM_MASTER
+USART2.BaudRate=115200
+USART2.IPParameters=VirtualMode-Asynchronous,BaudRate
+USART2.VirtualMode-Asynchronous=VM_ASYNC
+VP_SYS_VS_DBSignals.Mode=DisableDeadBatterySignals
+VP_SYS_VS_DBSignals.Signal=SYS_VS_DBSignals
+VP_SYS_VS_Systick.Mode=SysTick
+VP_SYS_VS_Systick.Signal=SYS_VS_Systick
+board=custom</code></pre><div class="btns"><button class="btn cp" type="button">Kopiuj</button><button class="btn dl" type="button" data-name="KA_Multisensor_G491.ioc">Pobierz</button></div></div></details>
+
+    </section>
+
+<section id="l1">
+<div class="lab open" data-lab="1">
+<div class="lab-head" data-toggle><span class="lab-no">1/3</span><span class="lab-title"><span class="t">STM32CubeIDE, peryferia i nakładka</span><small>Wyjścia i wejścia cyfrowe, debugowanie, przerwania, ADC, port szeregowy i czujniki nakładki – bez systemu operacyjnego.</small></span><span class="lab-eng">FreeRTOS</span><span class="lab-prog" data-prog></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="lab-body">
+<h4>Wstęp</h4>
+<p class="goal">FreeRTOS jest systemem operacyjnym czasu rzeczywistego przeznaczonym dla systemów wbudowanych. Na zajęciach zostanie uruchomiony na mikrokontrolerze STM32 firmy STMicroelectronics. Rodzina 32-bitowych układów tego producenta obejmuje serie ekonomiczne, standardowe i wysokowydajne, układy o obniżonym poborze energii (LowPower), układy z wbudowaną komunikacją Bluetooth i Wi-Fi oraz układy dwurdzeniowe.</p><p class="goal">Na zajęciach wykorzystane zostanie środowisko STM32CubeIDE (Windows 10), które posłuży do przygotowania, programowania i debugowania płyty ewaluacyjnej NUCLEO-G491RE (Nucleo-64) z układem STM32G491RE oraz płyty rozszerzeń KA-Nucleo-Multisensor. Instrukcje zakładają STM32CubeIDE w wersji 1.x z wbudowanym konfiguratorem STM32CubeMX (np. 1.19); od wersji 2.0 STM32CubeMX jest osobnym programem.</p><p class="goal">Termometr, barometr, akcelerometr, diody RGB i wyświetlacz nakładki obsługuje się funkcjami biblioteki nakładki (pliki <code>multisensor.c</code> i <code>multisensor.h</code>). Bibliotekę, plik konfiguracyjny i mapę pinów znajdziesz w sekcji <i>Nakładka</i> w menu po lewej.</p>
+<h4>Przebieg ćwiczenia</h4><ol class="tasks zadania">
+<li data-zid="1.1"><input type="checkbox" id="z-1-1"><div class="taskmain"><label for="z-1-1"><b>Wstęp do pracy z FreeRTOS w środowisku STM32CubeIDE</b></label><div class="ttext"><ul class="plain"><li>NUCLEO-G491RE – płyta ewaluacyjna</li><li>KA-Nucleo-Multisensor – płyta rozszerzeń</li><li>STM32CubeIDE – środowisko projektowe</li><li>STM32CubeMX – graficzny konfigurator mikrokontrolera</li></ul></div></div></li>
+<li data-zid="1.2"><input type="checkbox" id="z-1-2"><div class="taskmain"><label for="z-1-2"><b>Utworzenie projektu</b></label><div class="ttext"><p class="tp">Utwórz projekt na podstawie pobranego pliku konfiguracyjnego <code>KA_Multisensor_G491.ioc</code> lub domyślnej konfiguracji dla płyty NUCLEO-G491RE. Do projektu dołącz bibliotekę nakładki: <code>multisensor.h</code> do katalogu <code>Core/Inc</code>, <code>multisensor.c</code> do katalogu <code>Core/Src</code>.</p></div></div></li>
+<li data-zid="1.3"><input type="checkbox" id="z-1-3"><div class="taskmain"><label for="z-1-3"><b>Wyjścia cyfrowe</b></label><div class="ttext"><p class="tp">Zadeklaruj funkcję, której zadaniem będzie miganie wbudowaną diodą LD2. Funkcja przyjmuje dwa argumenty: czas włączenia i wyłączenia diody. Funkcję wywołaj w głównej pętli programu.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:3" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.4"><input type="checkbox" id="z-1-4"><div class="taskmain"><label for="z-1-4"><b>Wejścia cyfrowe</b></label><div class="ttext"><p class="tp">Napisz funkcję zmieniającą stan diody na przeciwny za każdym wciśnięciem przycisku. Wykonaj zadanie na przycisku wbudowanym w płytę Nucleo (B1) oraz na płycie rozszerzeń (S1). Funkcję wywołaj w głównej pętli programu.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:4" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.5"><input type="checkbox" id="z-1-5"><div class="taskmain"><label for="z-1-5"><b>Debugowanie</b></label><div class="ttext"><p class="tp">Rozbuduj funkcję z poprzedniego zadania o zapis aktualnego stanu przycisku w zmiennej typu <code>uint8_t</code>. Uruchom program w trybie Debug, następnie sprawdź aktualną wartość za pomocą narzędzia Live Expressions.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:5" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.6"><input type="checkbox" id="z-1-6"><div class="taskmain"><label for="z-1-6"><b>Opóźnienia</b></label><div class="ttext"><p class="tp">Rozbuduj funkcję z poprzedniego zadania o zmianę częstotliwości migania diody LD2 po każdym naciśnięciu przycisku. Częstotliwość ma zostać wybrana z następującego zbioru: 10 Hz, 1 Hz, 0,25 Hz. Do migania wykorzystaj funkcję z zadania 3. Reakcja na przycisk ma być natychmiastowa. Funkcję wywołaj w głównej pętli programu.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:6" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.7"><input type="checkbox" id="z-1-7"><div class="taskmain"><label for="z-1-7"><b>Przerwania</b></label><div class="ttext"><p class="tp">Napisz program, który w momencie pojawienia się zbocza narastającego na przycisku BX ma zmienić stan pinu PAX na wysoki, a w przypadku zbocza opadającego – na niski. Stan wyjścia PAX po inicjalizacji ma być wysoki.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:7" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.8"><input type="checkbox" id="z-1-8"><div class="taskmain"><label for="z-1-8"><b>Przetwornik analogowo-cyfrowy</b></label><div class="ttext"><p class="tp">Napisz funkcję, której zadaniem jest odczyt napięcia na fotorezystorze wbudowanym w płytę rozszerzeń. Sprawdź wykorzystaną rozdzielczość przetwornika ADC, a następnie przelicz odczyty na skalę 0–100 %. Zwracaną wartość zapisz w zmiennej globalnej typu <code>uint8_t</code> i sprawdź poprawność działania w trybie Debug.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:8" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.9"><input type="checkbox" id="z-1-9"><div class="taskmain"><label for="z-1-9"><b>Przetwornik analogowo-cyfrowy i wyjście cyfrowe</b></label><div class="ttext"><p class="tp">Wykorzystaj poprzednie opracowania i przygotuj program, który na podstawie czujnika oświetlenia (fotorezystora) będzie płynnie dostosowywał jasność świecenia diody LD2.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:9" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.10"><input type="checkbox" id="z-1-10"><div class="taskmain"><label for="z-1-10"><b>Port szeregowy</b></label><div class="ttext"><p class="tp">Napisz funkcję wysyłającą tekst przez USART2 (wirtualny port COM programatora ST-LINK, 115200 8N1). Co 1 s wysyłaj jasność z zadania 8 i obserwuj dane w terminalu. Funkcja będzie wykorzystywana na kolejnych zajęciach.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:10" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.11"><input type="checkbox" id="z-1-11"><div class="taskmain"><label for="z-1-11"><b>Czujniki nakładki</b></label><div class="ttext"><p class="tp">Za pomocą funkcji biblioteki nakładki odczytaj temperaturę (DS18B20), ciśnienie i temperaturę (LPS25HB) oraz przyspieszenie w osiach X, Y i Z (LIS35DE). Wyniki wysyłaj co 1 s funkcją z zadania 10. Porównaj wskazania obu termometrów.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:11" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="1.12"><input type="checkbox" id="z-1-12"><div class="taskmain"><label for="z-1-12"><b>Diody RGB</b></label><div class="ttext"><p class="tp">Na podstawie odczytów akcelerometru zapalaj diodę RGB: przy przechyle w osi X w kolorze czerwonym, w osi Y w kolorze zielonym, a gdy płytka leży płasko – w kolorze niebieskim.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="1:12" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+</ol>
+<h4>Funkcje</h4><div class="cheat one">
+<div class="cbox"><h4>HAL</h4><div class="row"><code>void HAL_GPIO_WritePin (GPIO_TypeDef * GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)</code></div><div class="row"><code>void HAL_GPIO_TogglePin (GPIO_TypeDef * GPIOx, uint16_t GPIO_Pin)</code></div><div class="row"><code>GPIO_PinState HAL_GPIO_ReadPin (GPIO_TypeDef * GPIOx, uint16_t GPIO_Pin)</code></div><div class="row"><code>void HAL_Delay (uint32_t Delay)</code></div><div class="row"><code>uint32_t HAL_GetTick (void)</code></div><div class="row"><code>void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_ADCEx_Calibration_Start (ADC_HandleTypeDef * hadc, uint32_t SingleDiff)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_ADC_Start (ADC_HandleTypeDef * hadc)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_ADC_PollForConversion (ADC_HandleTypeDef * hadc, uint32_t Timeout)</code></div><div class="row"><code>uint32_t HAL_ADC_GetValue (ADC_HandleTypeDef * hadc)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_TIM_PWM_Start (TIM_HandleTypeDef * htim, uint32_t Channel)</code></div><div class="row"><code>__HAL_TIM_SET_COMPARE (__HANDLE__, __CHANNEL__, __COMPARE__)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_UART_Transmit (UART_HandleTypeDef * huart, const uint8_t * pData, uint16_t Size, uint32_t Timeout)</code></div></div>
+<div class="cbox"><h4>Nakładka (multisensor.h)</h4><div class="row"><code>void MS_Init (void)</code></div><div class="row"><code>HAL_StatusTypeDef TEMP_Read (int16_t * temp)</code></div><div class="row"><code>HAL_StatusTypeDef BARO_Read (uint16_t * press, int16_t * temp)</code></div><div class="row"><code>HAL_StatusTypeDef ACC_Read (int16_t * x, int16_t * y, int16_t * z)</code></div><div class="row"><code>void RGB_Set (uint8_t led, enum rgbColor color)</code></div><div class="row"><code>void RGB_Off (void)</code></div></div>
+</div>
+<h4>Materiały dodatkowe</h4><ul class="plain"><li><a href="https://www.st.com/resource/en/user_manual/DM00610707.pdf" target="_blank" rel="noopener">Description of STM32G4 HAL and low-layer drivers – User manual (UM2570)</a></li><li><a href="https://www.st.com/resource/en/user_manual/um2505-stm32g4-nucleo64-boards-mb1367-stmicroelectronics.pdf" target="_blank" rel="noopener">STM32G4 Nucleo-64 boards (MB1367) – User manual (UM2505)</a></li><li><a href="https://wiki.kamamilabs.com/index.php/KA-Nucleo-Multisensor" target="_blank" rel="noopener">KA-Nucleo-Multisensor – opis i schemat (kamamilabs.com)</a></li></ul>
+<div class="callout end-note"><strong>Koniec zajęć</strong><ol><li>Wpisz kod i odpowiedzi pod zadaniami, wygeneruj sprawozdanie (przycisk na dole strony) i prześlij PDF na <a href="https://sprawozdania.kia.prz.edu.pl" target="_blank" rel="noopener">sprawozdania.kia.prz.edu.pl</a>.</li><li>Odpowiedzi są zapisane tylko w tej przeglądarce – zachowaj PDF albo plik JSON.</li></ol></div>
+</div></div></section>
+<section id="l2">
+<div class="lab" data-lab="2">
+<div class="lab-head" data-toggle><span class="lab-no">2/3</span><span class="lab-title"><span class="t">Zadania, priorytety i wyświetlacz</span><small>Zadania FreeRTOS, osDelay a HAL_Delay, częstotliwość ticka, priorytety, funkcje hook i multipleksowanie wyświetlacza.</small></span><span class="lab-eng">FreeRTOS</span><span class="lab-prog" data-prog></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="lab-body">
+<h4>Wstęp</h4>
+<p class="goal">Do wykonania poniższych zadań wykorzystany zostanie wyświetlacz 7-segmentowy płyty rozszerzeń KA-Nucleo-Multisensor. Dokładny schemat połączeń znajduje się w materiałach dodatkowych. Za sterowanie konkretnym segmentem (linią) odpowiadają piny wyjściowe oznaczone literami od A do G (PC6, PC4, PC3, PC1, PC2, PC5, PC0) oraz DP (PC7). W celu aktywacji konkretnej pozycji (cyfry) należy ustawić stan niski na jednym z wyjść oznaczonych jako COM (COM1–COM4: PC11, PC10, PC9, PC8). W celu wyświetlenia zróżnicowanej sekwencji na wielu cyfrach należy wykorzystać multipleksowanie.</p><p class="goal">Przykładowo, wyświetlenie liczby 11 wymaga ustawienia:</p><ul class="plain"><li>stanu wysokiego na segmentach B i C,</li><li>stanu niskiego na segmentach A, D, E, F, G,</li><li>stanu niskiego na pozycjach COM1, COM2,</li><li>stanu wysokiego na pozycjach COM3, COM4.</li></ul><p class="goal">Wyjścia COM są połączone bezpośrednio z pinami mikrokontrolera, bez tranzystorów. Bez multipleksowania mogą jednocześnie świecić najwyżej trzy segmenty na jednej pozycji i ten sam segment na najwyżej trzech pozycjach – inaczej piny są przeciążone. Dlatego w zadaniach 3–7 wyświetlane są liczby 11 i 77 na pozycjach COM1 i COM2.</p><p class="goal">W tym ćwiczeniu nie umieszczamy żadnych instrukcji w pętli głównej programu.</p><p class="goal">Do obsługi wyświetlacza wykorzystaj funkcje <code>DISP_</code> z biblioteki nakładki (<code>multisensor.h</code>). Segmenty i pozycje łączy się operatorem <code>|</code>, np. <code>DISP_SetSegments(DISP_SEG_B | DISP_SEG_C)</code> i <code>DISP_SetPositions(DISP_POS_1 | DISP_POS_2)</code> wyświetlają liczbę 11.</p>
+<figure><img alt="Wyświetlacz 7-segmentowy: oznaczenia segmentów i połączenia jednej cyfry (wspólna katoda)." src="data:image/png;base64,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"><figcaption>Wyświetlacz 7-segmentowy: oznaczenia segmentów i połączenia jednej cyfry (wspólna katoda).</figcaption></figure>
+<h4>Przebieg ćwiczenia</h4><ol class="tasks zadania">
+<li data-zid="2.1"><input type="checkbox" id="z-2-1"><div class="taskmain"><label for="z-2-1"><b>Wstęp</b></label><div class="ttext"><p class="tp">Do projektu z instrukcji 1/3 dołącz obsługę FreeRTOS w wersji V1 (Middleware → FREERTOS, interfejs CMSIS_V1).</p></div></div></li>
+<li data-zid="2.2"><input type="checkbox" id="z-2-2"><div class="taskmain"><label for="z-2-2"><b>Sygnał zegarowy</b></label><div class="ttext"><p class="tp">System FreeRTOS do pracy wykorzystuje licznik sprzętowy SysTick. Domyślnie jest on wykorzystywany przez bibliotekę HAL do odmierzania czasu. W zakładce SYS należy przypisać inny licznik dla biblioteki HAL, np. TIM7 (STM32G491 nie ma licznika TIM14).</p></div></div></li>
+<li data-zid="2.3"><input type="checkbox" id="z-2-3"><div class="taskmain"><label for="z-2-3"><b>FirstTask</b></label><div class="ttext"><p class="tp">Zmień nazwę domyślnego zadania na FirstTask, zostaw domyślny priorytet. W pętli głównej zadania FirstTask ustaw naprzemiennie na wyświetlaczu liczby 11 i 77 co 1 sekundę. Wykorzystaj do tego zadania funkcje opóźniające <code>osDelay</code> oraz <code>HAL_Delay</code>.</p><p class="tp">Porównaj i wyjaśnij różnice w działaniu podczas wykorzystania funkcji opóźniających <code>osDelay</code> oraz <code>HAL_Delay</code>.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="2:3" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="2.4"><input type="checkbox" id="z-2-4"><div class="taskmain"><label for="z-2-4"><b>SecondTask</b></label><div class="ttext"><p class="tp">Dodaj zadanie SecondTask z priorytetem normalnym. Ustaw parametr <code>TICK_RATE_HZ</code> na 10 (FREERTOS → Config parameters). W pętli głównej zadania FirstTask ustaw wyświetlacz na 11 co 1 sekundę. W pętli głównej zadania SecondTask ustaw wyświetlacz na 77 co 1 sekundę.</p><p class="tp">Uruchom każdy z projektów w trybie Debug, umieść breakpointy w liniach zmieniających stan wyświetlacza. Monitoruj stan zmiennej <code>uwTick</code> (czas pracy mikrokontrolera w ms) w zakładce Live Expressions.</p><p class="tp">Porównaj i wyjaśnij różnice w działaniu podczas wykorzystania funkcji opóźniających <code>osDelay</code> oraz <code>HAL_Delay</code>.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="2:4" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="2.5"><input type="checkbox" id="z-2-5"><div class="taskmain"><label for="z-2-5"><b>Priorytety</b></label><div class="ttext"><p class="tp">Ustaw priorytet zadania SecondTask na <code>osPriorityAboveNormal</code>.</p><p class="tp">Ustaw parametr <code>USE_TRACE_FACILITY</code> na Enabled (FREERTOS → Config parameters). Uruchom program w trybie Debug, zatrzymaj go i otwórz widok <i>FreeRTOS Task List</i> (Window → Show View → Other… → FreeRTOS). Odczytaj stan każdego zadania (Running, Ready, Blocked, Suspended) przy <code>osDelay</code> i przy <code>HAL_Delay</code>.</p><p class="tp">Porównaj i wyjaśnij różnice w działaniu podczas wykorzystania funkcji opóźniających <code>osDelay</code> oraz <code>HAL_Delay</code>.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="2:5" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="2.6"><input type="checkbox" id="z-2-6"><div class="taskmain"><label for="z-2-6"><b>IdleHook</b></label><div class="ttext"><p class="tp">Ustaw parametr <code>USE_IDLE_HOOK</code> na Enabled (FREERTOS → Config parameters). W funkcji <code>vApplicationIdleHook</code> ustaw wyświetlacz na „--” (segment G na pozycjach COM1 i COM2). Zadania FirstTask i SecondTask pozostaw bez zmian.</p><p class="tp">Dodatkowo w funkcji <code>vApplicationIdleHook</code> zwiększaj zmienną globalną <code>idleCount</code> (typ <code>uint32_t</code>, z modyfikatorem <code>volatile</code>) i obserwuj w Live Expressions, jak szybko rośnie przy <code>osDelay</code>, a jak przy <code>HAL_Delay</code>.</p><p class="tp">Porównaj i wyjaśnij różnice w działaniu podczas wykorzystania funkcji opóźniających <code>osDelay</code> oraz <code>HAL_Delay</code>.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="2:6" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="2.7"><input type="checkbox" id="z-2-7"><div class="taskmain"><label for="z-2-7"><b>TickHook</b></label><div class="ttext"><p class="tp">Ustaw parametr <code>USE_IDLE_HOOK</code> na Disabled, a <code>USE_TICK_HOOK</code> na Enabled (FREERTOS → Config parameters). W funkcji <code>vApplicationTickHook</code> ustaw wyświetlacz na „--”. Zadania FirstTask i SecondTask pozostaw bez zmian.</p><p class="tp">Następnie włącz oba parametry, <code>USE_IDLE_HOOK</code> i <code>USE_TICK_HOOK</code>. W <code>vApplicationIdleHook</code> zapalaj diodę LD2 (PA5 skonfigurowany jako GPIO_Output), a w <code>vApplicationTickHook</code> ją gaś. Dioda świeci tylko wtedy, gdy procesor nie ma nic do zrobienia, więc jej jasność pokazuje wolny czas procesora. Porównaj jasność diody przy <code>osDelay</code> i przy <code>HAL_Delay</code>.</p><p class="tp">Porównaj i wyjaśnij różnice w działaniu podczas wykorzystania funkcji opóźniających <code>osDelay</code> oraz <code>HAL_Delay</code>.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="2:7" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="2.8"><input type="checkbox" id="z-2-8"><div class="taskmain"><label for="z-2-8"><b>Multipleksowanie</b></label><div class="ttext"><p class="tp">Ustaw parametry <code>USE_IDLE_HOOK</code> i <code>USE_TICK_HOOK</code> na Disabled, a <code>TICK_RATE_HZ</code> na 1000 (FREERTOS → Config parameters). Usuń zadania FirstTask i SecondTask. Dodaj zadanie displayTask, którego celem będzie wyświetlanie dowolnej liczby na wyświetlaczu 7-segmentowym za pomocą multipleksowania. Na wyświetlaczu przedstaw licznik czasu pracy mikrokontrolera w ms. Wypróbuj różne częstotliwości odświeżania ekranu.</p><p class="tp">W pętli zadania displayTask zapisuj w zmiennej globalnej wynik <code>uxTaskGetStackHighWaterMark(NULL)</code> (parametr <code>uxTaskGetStackHighWaterMark</code> w zakładce Include parameters musi być włączony). Odczytaj w Live Expressions, ile słów stosu zadania pozostaje wolnych, i porównaj z rozmiarem stosu ustawionym przy tworzeniu zadania.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="2:8" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+</ol>
+<h4>Funkcje</h4><div class="cheat one">
+<div class="cbox"><h4>HAL</h4><div class="row"><code>void HAL_Delay (uint32_t Delay)</code></div><div class="row"><code>uint32_t HAL_GetTick (void)</code></div><div class="row"><code>void HAL_GPIO_WritePin (GPIO_TypeDef * GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)</code></div></div>
+<div class="cbox"><h4>FreeRTOS</h4><div class="row"><code>osStatus osDelay (uint32_t millisec)</code></div><div class="row"><code>void vApplicationIdleHook (void)</code></div><div class="row"><code>void vApplicationTickHook (void)</code></div><div class="row"><code>UBaseType_t uxTaskGetStackHighWaterMark (TaskHandle_t xTask)</code></div></div>
+<div class="cbox"><h4>Wyświetlacz (multisensor.h)</h4><div class="row"><code>void DISP_SetSegments (enum dispSeg seg)</code></div><div class="row"><code>void DISP_SetPositions (enum dispPos pos)</code></div><div class="row"><code>void DISP_SetDigit (uint8_t digit)</code></div></div>
+</div>
+<h4>Materiały dodatkowe</h4><ul class="plain"><li><a href="https://www.st.com/resource/en/user_manual/DM00610707.pdf" target="_blank" rel="noopener">Description of STM32G4 HAL and low-layer drivers – User manual (UM2570)</a></li><li><a href="https://freertos.org/Documentation/02-Kernel/04-API-references/01-Task-creation/00-TaskHandle" target="_blank" rel="noopener">FreeRTOS – opis API</a></li><li><a href="https://wiki.kamamilabs.com/index.php/KA-Nucleo-Multisensor" target="_blank" rel="noopener">KA-Nucleo-Multisensor – opis i schemat (kamamilabs.com)</a></li></ul>
+<div class="callout end-note"><strong>Koniec zajęć</strong><ol><li>Wpisz kod i odpowiedzi pod zadaniami, wygeneruj sprawozdanie (przycisk na dole strony) i prześlij PDF na <a href="https://sprawozdania.kia.prz.edu.pl" target="_blank" rel="noopener">sprawozdania.kia.prz.edu.pl</a>.</li><li>Odpowiedzi są zapisane tylko w tej przeglądarce – zachowaj PDF albo plik JSON.</li></ol></div>
+</div></div></section>
+<section id="l3">
+<div class="lab" data-lab="3">
+<div class="lab-head" data-toggle><span class="lab-no">3/3</span><span class="lab-title"><span class="t">Semafory, mutexy i stacja pomiarowa</span><small>Synchronizacja przerwania z zadaniem, ochrona wspólnego zasobu, priorytety, producent i konsument, program łączący peryferia nakładki.</small></span><span class="lab-eng">FreeRTOS</span><span class="lab-prog" data-prog></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="lab-body">
+<h4>Przebieg ćwiczenia</h4><ol class="tasks zadania">
+<li data-zid="3.1"><input type="checkbox" id="z-3-1"><div class="taskmain"><label for="z-3-1"><b>Semafor binarny</b></label><div class="ttext"><p class="tp">Zaimplementuj mechanizm synchronizacji za pomocą semafora binarnego. Po naciśnięciu przycisku S1 dioda LD2 powinna zapalić się na 1 s.</p><p class="tp">Wskazówki:</p><ul class="plain"><li>użyj przerwania (EXTI) do zwolnienia semafora w reakcji na przycisk,</li><li>zadanie główne powinno czekać na semafor.</li></ul><p class="tp">Naciśnij S1 kilka razy szybko, gdy dioda jeszcze świeci. Ile razy dioda zapali się ponownie? Wyjaśnij, dlaczego semafor binarny nie zlicza naciśnięć.</p><p class="tp">Sprawdź, czy semafor można zastąpić mutexem.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="3:1" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="3.2"><input type="checkbox" id="z-3-2"><div class="taskmain"><label for="z-3-2"><b>Mutex</b></label><div class="ttext"><p class="tp">Zaimplementuj ochronę dostępu do wspólnego zasobu za pomocą mutexu. Stwórz dwa zadania:</p><ul class="plain"><li>pierwsze zadanie co 2 sekundy wysyła komunikat „Task 1: Hello!”,</li><li>drugie zadanie co 3 sekundy wysyła komunikat „Task 2: World!”.</li></ul><p class="tp">Tekst wysyłaj funkcją opracowaną na pierwszych zajęciach (instrukcja 1/3, zadanie 10). Wysyłane dane obserwuj w terminalu.</p><p class="tp">Najpierw uruchom oba zadania bez mutexu, z tym samym priorytetem i z komunikatami wydłużonymi do ok. 60 znaków. Zaraz po starcie programu (i potem mniej więcej co 6 sekund) oba zadania wysyłają tekst w tej samej chwili. Sprawdź, które komunikaty docierają do terminala i jaką wartość zwraca wtedy <code>HAL_UART_Transmit</code>. Następnie dodaj mutex i porównaj wynik.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="3:2" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="3.3"><input type="checkbox" id="z-3-3"><div class="taskmain"><label for="z-3-3"><b>Różne priorytety a dostęp do zasobów</b></label><div class="ttext"><p class="tp">Zaimplementuj trzy wybrane sygnały kodów błędów BIOS prezentowane na diodzie LD2. Przykładowe:</p><ul class="plain"><li>sygnał 1: miganie diody 3 razy (500 ms włączona, 500 ms wyłączona),</li><li>sygnał 2: miganie diody 2 razy (1 sekunda włączona, 1 sekunda wyłączona),</li><li>sygnał 3: miganie diody 2 razy (2 sekundy włączona).</li></ul><p class="tp">Stwórz trzy zadania:</p><ul class="plain"><li>zadanie A (wysoki priorytet): co 3 sekundy próbuje wygenerować sygnał nr 1,</li><li>zadanie B (średni priorytet): co 10 sekund próbuje wygenerować sygnał nr 2,</li><li>zadanie C (niski priorytet): co 15 sekund próbuje wygenerować sygnał nr 3.</li></ul><p class="tp">Pomiędzy sekwencjami odczekaj 2 sekundy. Nie doprowadź do zagłodzenia zadań.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="3:3" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="3.4"><input type="checkbox" id="z-3-4"><div class="taskmain"><label for="z-3-4"><b>Producent i konsument z wykorzystaniem semaforów zliczających</b></label><div class="ttext"><p class="tp">Producent:</p><ul class="plain"><li>miga diodą LD2 co 2 sekundy,</li><li>każde zaświecenie zwiększa wartość semafora zliczającego (generuje nowe „zadanie” do wykonania przez konsumenta).</li></ul><p class="tp">Konsument:</p><ul class="plain"><li>wyświetla komunikat na porcie szeregowym po naciśnięciu przycisku B1 (synchronizacja semaforem binarnym), jeżeli dostępny jest zasób od producenta.</li></ul><p class="tp">Semafor zliczający:</p><ul class="plain"><li>pojemność „kolejki” wynosi 5.</li></ul><p class="tp">Obserwuj, jak działa mechanizm ograniczenia dostępu do zasobów.</p><p class="tp">Bieżącą wartość semafora zliczającego (<code>uxSemaphoreGetCount</code>) pokazuj na wyświetlaczu za pomocą zadania displayTask z instrukcji 2/3. Co się dzieje, gdy wartość dojdzie do 5, a producent nadal miga diodą?</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="3:4" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+<li data-zid="3.5"><input type="checkbox" id="z-3-5"><div class="taskmain"><label for="z-3-5"><b>Stacja pomiarowa</b></label><div class="ttext"><p class="tp">Połącz peryferia nakładki w jeden program złożony z zadań:</p><ul class="plain"><li>zadanie pomiarowe co 1 s odczytuje temperaturę (DS18B20), ciśnienie (LPS25HB) i jasność (fotorezystor) i zapisuje je w zmiennych globalnych chronionych mutexem,</li><li>zadanie displayTask (instrukcja 2/3, zadanie 8) pokazuje na wyświetlaczu wybraną wielkość,</li><li>przyciski S1 i S2 (przerwanie i semafor binarny) zmieniają wyświetlaną wielkość,</li><li>zadanie akcelerometru zapala diodę RGB zależnie od przechyłu płytki (instrukcja 1/3, zadanie 12),</li><li>co 5 s wszystkie wartości są wysyłane przez port szeregowy; port chroni mutex z zadania 2.</li></ul><p class="tp">Na początku każdego obiegu zadanie zapala swoją diodę RGB (każde zadanie inną). Jednocześnie świeci tylko jedna dioda, więc widać, które zadanie ostatnio otrzymało procesor i jak często się wykonuje.</p></div><button type="button" class="ans-toggle" data-label="odpowiedź">+ odpowiedź</button><textarea class="ans" data-key="3:5" hidden placeholder="Wpisz kod lub odpowiedź…"></textarea></div></li>
+</ol>
+<h4>Funkcje</h4><div class="cheat one">
+<div class="cbox"><h4>HAL</h4><div class="row"><code>void HAL_GPIO_WritePin (GPIO_TypeDef * GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)</code></div><div class="row"><code>GPIO_PinState HAL_GPIO_ReadPin (GPIO_TypeDef * GPIOx, uint16_t GPIO_Pin)</code></div><div class="row"><code>void HAL_Delay (uint32_t Delay)</code></div><div class="row"><code>uint32_t HAL_GetTick (void)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_ADC_Start (ADC_HandleTypeDef * hadc)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_ADC_PollForConversion (ADC_HandleTypeDef * hadc, uint32_t Timeout)</code></div><div class="row"><code>uint32_t HAL_ADC_GetValue (ADC_HandleTypeDef * hadc)</code></div><div class="row"><code>HAL_StatusTypeDef HAL_UART_Transmit (UART_HandleTypeDef * huart, const uint8_t * pData, uint16_t Size, uint32_t Timeout)</code></div><div class="row"><code>__weak void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)</code></div></div>
+<div class="cbox"><h4>FreeRTOS</h4><div class="row"><code>osStatus osDelay (uint32_t millisec)</code></div><div class="row"><code>int32_t osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec)</code></div><div class="row"><code>osStatus osSemaphoreRelease (osSemaphoreId semaphore_id)</code></div><div class="row"><code>osStatus osMutexWait (osMutexId mutex_id, uint32_t millisec)</code></div><div class="row"><code>osStatus osMutexRelease (osMutexId mutex_id)</code></div><div class="row"><code>UBaseType_t uxSemaphoreGetCount (SemaphoreHandle_t xSemaphore)</code></div></div>
+<div class="cbox"><h4>Nakładka (multisensor.h)</h4><div class="row"><code>HAL_StatusTypeDef TEMP_Read (int16_t * temp)</code></div><div class="row"><code>HAL_StatusTypeDef BARO_Read (uint16_t * press, int16_t * temp)</code></div><div class="row"><code>HAL_StatusTypeDef ACC_Read (int16_t * x, int16_t * y, int16_t * z)</code></div><div class="row"><code>void RGB_Set (uint8_t led, enum rgbColor color)</code></div><div class="row"><code>void RGB_Off (void)</code></div></div>
+<div class="cbox"><h4>Wyświetlacz (multisensor.h)</h4><div class="row"><code>void DISP_SetSegments (enum dispSeg seg)</code></div><div class="row"><code>void DISP_SetPositions (enum dispPos pos)</code></div><div class="row"><code>void DISP_SetDigit (uint8_t digit)</code></div></div>
+</div>
+<h4>Materiały dodatkowe</h4><ul class="plain"><li><a href="https://www.st.com/resource/en/user_manual/DM00610707.pdf" target="_blank" rel="noopener">Description of STM32G4 HAL and low-layer drivers – User manual (UM2570)</a></li><li><a href="https://freertos.org/Documentation/02-Kernel/04-API-references/01-Task-creation/00-TaskHandle" target="_blank" rel="noopener">FreeRTOS – opis API</a></li><li><a href="https://wiki.kamamilabs.com/index.php/KA-Nucleo-Multisensor" target="_blank" rel="noopener">KA-Nucleo-Multisensor – opis i schemat (kamamilabs.com)</a></li></ul>
+<div class="callout end-note"><strong>Koniec zajęć</strong><ol><li>Wpisz kod i odpowiedzi pod zadaniami, wygeneruj sprawozdanie (przycisk na dole strony) i prześlij PDF na <a href="https://sprawozdania.kia.prz.edu.pl" target="_blank" rel="noopener">sprawozdania.kia.prz.edu.pl</a>.</li><li>Odpowiedzi są zapisane tylko w tej przeglądarce – zachowaj PDF albo plik JSON.</li></ol></div>
+</div></div></section>
+
+    <section id="sprawozdanie">
+      <h2 class="eyebrow">Praca studenta</h2>
+      <div class="sec-title">Sprawozdanie</div>
+      <p>Wpisz kod i odpowiedzi pod zadaniami (przycisk „+ odpowiedź”), uzupełnij dane poniżej i wygeneruj sprawozdanie. W oknie drukowania wybierz „Zapisz jako PDF”, a plik prześlij na <a href="https://sprawozdania.kia.prz.edu.pl" target="_blank" rel="noopener">sprawozdania.kia.prz.edu.pl</a>.</p>
+      <div class="report-form">
+        <div class="fields">
+          <div><label class="fl" for="stud-name">Imię i nazwisko</label><input type="text" id="stud-name" placeholder="np. Jan Kowalski, Anna Nowak"></div>
+          <div><label class="fl" for="stud-group">Grupa / nr indeksu</label><input type="text" id="stud-group" placeholder="np. AiR-2, 123456, 123457"></div>
+        </div>
+        <div class="report-actions">
+          <button class="action primary" id="btn-pdf" type="button">Generuj sprawozdanie (PDF)</button>
+          <button class="action" id="btn-save" type="button">Zapisz odpowiedzi (JSON)</button>
+          <label class="action filelabel">Wczytaj odpowiedzi<input type="file" id="file-load" accept="application/json,.json"></label>
+          <button class="action ghost" id="btn-clear" type="button">Wyczyść</button>
+        </div>
+        <p class="rhint">Odpowiedzi zapisują się automatycznie w tej przeglądarce (jeśli to możliwe). Zapis dotyczy tylko tej przeglądarki na tym komputerze – plik JSON pozwala zachować kopię.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="foot">Materiał laboratoryjny · Systemy operacyjne w automatyce. Strona jest generowana z plików <code>labs/*.yaml</code> (<code>tools/build_site.py</code>). FreeRTOS © Amazon.com, Inc. (licencja MIT).</div>
+
+<button class="fab" id="fab" type="button">Sprawozdanie (PDF)</button>
+<div id="report"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+  }
+  function flash(btn, txt) {
+    var o = btn.textContent;
+    btn.textContent = txt;
+    btn.classList.add('done');
+    setTimeout(function () { btn.textContent = o; btn.classList.remove('done'); }, 1400);
+  }
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type || 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---- rozwijanie laboratoriów ----
+  document.querySelectorAll('[data-toggle]').forEach(function (h) {
+    h.addEventListener('click', function () { h.closest('.lab').classList.toggle('open'); });
+  });
+
+  // ---- kopiowanie / pobieranie ----
+  document.querySelectorAll('.cmd .btn.cp').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var code = b.closest('.cmd').querySelector('code').textContent;
+      try { await navigator.clipboard.writeText(code); } catch (e) { /* brak uprawnień schowka */ }
+      flash(b, 'Skopiowano');
+    });
+  });
+  document.querySelectorAll('.cmd .btn.dl').forEach(function (b) {
+    b.addEventListener('click', function () {
+      download(b.dataset.name, b.closest('.cmd').querySelector('code').textContent, 'text/plain');
+      flash(b, 'Pobrano');
+    });
+  });
+
+  // ---- zapis stanu (localStorage, z zabezpieczeniem) ----
+  var KEY = 'freertos-cubeide-obs-v1';
+  function store() { try { return window.localStorage; } catch (e) { return null; } }
+  function loadState() {
+    try { var s = store(); return s ? JSON.parse(s.getItem(KEY) || '{}') : {}; } catch (e) { return {}; }
+  }
+  var STATE = loadState();
+  STATE.__meta = STATE.__meta || {};
+  function saveState() { try { var s = store(); if (s) s.setItem(KEY, JSON.stringify(STATE)); } catch (e) { /* ignoruj */ } }
+
+  var nameEl = document.getElementById('stud-name');
+  var groupEl = document.getElementById('stud-group');
+  nameEl.value = STATE.__meta.name || '';
+  groupEl.value = STATE.__meta.group || '';
+  nameEl.addEventListener('input', function () { STATE.__meta.name = nameEl.value; saveState(); });
+  groupEl.addEventListener('input', function () { STATE.__meta.group = groupEl.value; saveState(); });
+
+  // ---- pola na rozwiązania ----
+  function setToggleLabel(li, hidden) {
+    var btn = li.querySelector('.ans-toggle');
+    if (btn) btn.textContent = (hidden ? '+' : '–') + ' ' + (btn.dataset.label || 'odpowiedź');
+  }
+  document.querySelectorAll('textarea.ans').forEach(function (ta) {
+    var li = ta.closest('li');
+    var key = ta.dataset.key;
+    var btn = li.querySelector('.ans-toggle');
+    if (STATE[key]) { ta.value = STATE[key]; ta.hidden = false; li.classList.add('has-ans'); setToggleLabel(li, false); }
+    btn.addEventListener('click', function () {
+      ta.hidden = !ta.hidden;
+      if (!ta.hidden && !ta.value && ta.dataset.tpl) ta.value = ta.dataset.tpl;
+      setToggleLabel(li, ta.hidden);
+      showLock(ta);
+      if (!ta.hidden) ta.focus();
+    });
+    ta.addEventListener('input', function () {
+      li.classList.toggle('has-ans', ta.value.trim() !== '');
+      STATE[key] = ta.value;
+      saveState();
+    });
+    var lk = li.querySelector('.lock');
+    if (lk) lk.addEventListener('click', function () {
+      if (!ta.value.trim()) return;
+      if (!confirm('Zapisać odpowiedź? Później nie będzie można jej zmienić.')) return;
+      STATE[key] = ta.value;
+      STATE[key + '#lock'] = Date.now();
+      saveState();
+      showLock(ta);
+    });
+    showLock(ta);
+  });
+
+  // ---- przewidywanie: blokada po zapisaniu ----
+  function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function showLock(ta) {
+    var row = ta.parentNode.querySelector('.lock-row');
+    if (!row) return;
+    var t = STATE[ta.dataset.key + '#lock'];
+    ta.readOnly = !!t;
+    row.hidden = ta.hidden;
+    row.querySelector('.lock').hidden = !!t;
+    row.querySelector('.lockinfo').textContent = t ? 'zapisano przed uruchomieniem (' + hhmm(t) + ')' : '';
+  }
+
+  // ---- pytania sprawdzające ----
+  function showQuiz() {
+    document.querySelectorAll('.lab').forEach(function (lab) {
+      var qs = lab.querySelectorAll('li.q'), ok = 0, done = 0;
+      qs.forEach(function (q) {
+        var a = STATE['quiz:' + q.dataset.q];
+        var why = q.querySelector('.why');
+        q.querySelectorAll('input').forEach(function (r) { r.checked = (a !== undefined && +r.value === +a); r.disabled = a !== undefined; });
+        why.textContent = a === undefined ? '' : ((+a === +q.dataset.ok) ? 'Dobrze. ' : 'Źle. ') + why.dataset.why;
+        if (a !== undefined) { done++; if (+a === +q.dataset.ok) ok++; }
+      });
+      var sc = lab.querySelector('[data-score]');
+      if (sc) sc.textContent = done ? '(' + ok + ' / ' + qs.length + ')' : '';
+    });
+  }
+  document.querySelectorAll('li.q input').forEach(function (r) {
+    r.addEventListener('change', function () {
+      var q = r.closest('li.q');
+      if (STATE['quiz:' + q.dataset.q] !== undefined) return;
+      STATE['quiz:' + q.dataset.q] = +r.value;
+      saveState();
+      showQuiz();
+    });
+  });
+  showQuiz();
+
+  function applyState(ns) {
+    STATE = ns || {};
+    STATE.__meta = STATE.__meta || {};
+    saveState();
+    document.querySelectorAll('textarea.ans').forEach(function (ta) {
+      var v = STATE[ta.dataset.key];
+      var has = !!(v && v.trim());
+      ta.value = v || '';
+      ta.hidden = !has;
+      var li = ta.closest('li');
+      li.classList.toggle('has-ans', has);
+      setToggleLabel(li, ta.hidden);
+      showLock(ta);
+    });
+    showQuiz();
+    nameEl.value = STATE.__meta.name || '';
+    groupEl.value = STATE.__meta.group || '';
+  }
+
+  // ---- postęp ----
+  function refresh(lab) {
+    var bx = lab.querySelectorAll('ol.tasks input[type=checkbox]');
+    var d = Array.prototype.filter.call(bx, function (x) { return x.checked; }).length;
+    var t = lab.querySelector('[data-prog]');
+    if (t) t.textContent = d + ' / ' + bx.length;
+  }
+  document.querySelectorAll('.lab').forEach(function (lab) {
+    lab.addEventListener('change', function (e) {
+      if (e.target.matches('input[type=checkbox]')) {
+        e.target.closest('li').classList.toggle('done', e.target.checked);
+        refresh(lab);
+      }
+    });
+    refresh(lab);
+  });
+
+  // ---- sprawozdanie (drukowanie do PDF) ----
+  function buildReport() {
+    var name = nameEl.value.trim();
+    var group = groupEl.value.trim();
+    var d = new Date().toLocaleDateString('pl-PL');
+    var h = '<div class="r-h1">Sprawozdanie — Systemy operacyjne w automatyce (FreeRTOS, STM32CubeIDE)</div>';
+    h += '<div class="r-meta">' + (name ? '<b>' + esc(name) + '</b>' : '(imię i nazwisko)') +
+         (group ? ' · ' + esc(group) : '') + ' · ' + d + '</div>';
+    var any = false;
+    document.querySelectorAll('.lab').forEach(function (lab) {
+      var no = lab.querySelector('.lab-no').textContent.trim();
+      var title = lab.querySelector('.lab-title .t').textContent.trim();
+      var rows = '';
+      var sc = lab.querySelector('[data-score]');
+      if (sc && sc.textContent) rows += '<div class="r-task"><div class="r-q"><b>Pytania sprawdzające</b> ' + esc(sc.textContent) + '</div></div>';
+      var czesc = '';
+      lab.querySelectorAll('ol.zadania > li').forEach(function (li) {
+        var ta = li.querySelector('textarea.ans');
+        var val = ta ? ta.value.trim() : '';
+        if (val && val !== (ta.dataset.tpl || '').trim()) {
+          var q = li.querySelector('label').textContent.trim();
+          var lk = STATE[ta.dataset.key + '#lock'];
+          if (li.dataset.czesc && li.dataset.czesc !== czesc) {
+            czesc = li.dataset.czesc;
+            rows += '<div class="r-czesc">' + (czesc === 'R' ? 'Część rozszerzona' : 'Część podstawowa') + '</div>';
+          }
+          rows += '<div class="r-task"><div class="r-q"><b>' + esc(li.dataset.zid) + '</b> ' + esc(q) +
+                  (lk ? ' <i>(zapisano przed uruchomieniem, ' + hhmm(lk) + ')</i>' : '') +
+                  '</div><pre class="r-a">' + esc(val) + '</pre></div>';
+        }
+      });
+      if (rows) {
+        any = true;
+        h += '<div class="r-lab"><h3>FreeRTOS ' + esc(no) + ' · ' + esc(title) + '</h3>' + rows + '</div>';
+      }
+    });
+    if (!any) {
+      h += '<div class="r-empty">Brak wpisanych odpowiedzi. Rozwiń pole „+ odpowiedź” pod zadaniem, wpisz odpowiedź i wygeneruj sprawozdanie ponownie.</div>';
+    }
+    document.getElementById('report').innerHTML = h;
+  }
+  document.getElementById('btn-pdf').addEventListener('click', function () { buildReport(); window.print(); });
+  document.getElementById('fab').addEventListener('click', function () {
+    document.getElementById('sprawozdanie').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // ---- zapis / wczytanie JSON, czyszczenie ----
+  document.getElementById('btn-save').addEventListener('click', function () {
+    STATE.__meta.name = nameEl.value;
+    STATE.__meta.group = groupEl.value;
+    saveState();
+    var base = (nameEl.value.trim() || 'sprawozdanie').replace(/\s+/g, '_').toLowerCase();
+    download('odpowiedzi_' + base + '.json', JSON.stringify(STATE, null, 2), 'application/json');
+  });
+  document.getElementById('file-load').addEventListener('change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try { applyState(JSON.parse(r.result)); } catch (err) { alert('Nie udało się wczytać pliku JSON.'); }
+    };
+    r.readAsText(f);
+    e.target.value = '';
+  });
+  document.getElementById('btn-clear').addEventListener('click', function () {
+    if (!confirm('Usunąć wszystkie wpisane odpowiedzi?')) return;
+    applyState({ __meta: { name: nameEl.value, group: groupEl.value } });
+  });
+
+  // ---- menu boczne: przejście do sekcji i aktywna pozycja ----
+  var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+  var map = {};
+  var ids = [];
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    if (document.getElementById(id)) { map[id] = a; ids.push(id); }
+  });
+  function setActive(id) {
+    links.forEach(function (l) { l.classList.toggle('active', l === map[id]); });
+  }
+  function openLab(id) {
+    var sec = document.getElementById(id);
+    var lab = sec && sec.querySelector('.lab');
+    if (lab) lab.classList.add('open');
+  }
+  var lockUntil = 0;
+  links.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var id = a.getAttribute('href').slice(1);
+      var sec = document.getElementById(id);
+      if (!sec) return;
+      e.preventDefault();
+      openLab(id);
+      setActive(id);
+      lockUntil = Date.now() + 1200;
+      sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try { history.replaceState(null, '', '#' + id); } catch (err) { /* plik lokalny */ }
+    });
+  });
+  function onScroll() {
+    if (Date.now() < lockUntil) return;
+    var cur = ids[0];
+    ids.forEach(function (id) {
+      if (document.getElementById(id).getBoundingClientRect().top <= 120) cur = id;
+    });
+    setActive(cur);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  if (location.hash && map[location.hash.slice(1)]) {
+    var hid = location.hash.slice(1);
+    openLab(hid);
+    setActive(hid);
+    lockUntil = Date.now() + 1200;
+    document.getElementById(hid).scrollIntoView({ block: 'start' });
+  } else {
+    onScroll();
+  }
+})();
+
+</script>
+</body>
+</html>
