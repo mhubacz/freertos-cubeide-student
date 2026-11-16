@@ -9,12 +9,12 @@ Strona działa też bez internetu – wystarczy otworzyć `docs/index.html`.
 
 | Plik | Zawartość |
 |---|---|
-| `projekt/KA_Multisensor_G491.ioc` | plik konfiguracyjny STM32CubeMX – od niego zaczynasz projekt (instrukcja 1/3, zadanie 2) |
+| `projekt/KA_Multisensor_G491.ioc` | plik konfiguracyjny STM32CubeMX – od niego zaczynasz projekt z nakładką (instrukcja 2/3, zadanie 1) |
 | `biblioteka/multisensor.h` | do katalogu `Core/Inc` projektu – opis wszystkich funkcji nakładki |
 | `biblioteka/multisensor.c` | do katalogu `Core/Src` projektu |
 | `docs/` | strony z instrukcjami |
 
-W `main()` po funkcjach `MX_..._Init()` wywołaj `MS_Init();`.
+Od instrukcji 2/3: w `main()` po funkcjach `MX_..._Init()` wywołaj `MS_Init();`.
 
 Pod każdym zadaniem na stronie wpisujesz kod lub odpowiedź; odpowiedzi zapisują się w przeglądarce.
 Na koniec zajęć wygeneruj sprawozdanie (PDF) i prześlij je na [sprawozdania.kia.prz.edu.pl](https://sprawozdania.kia.prz.edu.pl).
