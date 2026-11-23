@@ -16,5 +16,7 @@ Strona działa też bez internetu – wystarczy otworzyć `docs/index.html`.
 
 Od instrukcji 2/3: w `main()` po funkcjach `MX_..._Init()` wywołaj `MS_Init();`.
 
+Przełącznik *Sprzęt* w menu wybiera wariant instrukcji: sama płytka Nucleo w instrukcji 2/3 albo z nakładką od 2/3 – ustaw ten, który wskazał prowadzący.
+
 Pod każdym zadaniem na stronie wpisujesz kod lub odpowiedź; odpowiedzi zapisują się w przeglądarce.
 Na koniec zajęć wygeneruj sprawozdanie (PDF) i prześlij je na [sprawozdania.kia.prz.edu.pl](https://sprawozdania.kia.prz.edu.pl).
